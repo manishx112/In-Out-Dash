@@ -1,0 +1,2805 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ExactChoice — Washing Plant Performance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+  <style>
+    :root {
+      --bg: #f0f4f8;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --radius: 16px;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --soft: #94a3b8;
+      --blue: #2563eb;
+      --teal: #0891b2;
+      --green: #059669;
+      --amber: #d97706;
+      --violet: #7c3aed;
+      --rose: #e11d48;
+      --blue-t: #eff6ff;
+      --teal-t: #ecfeff;
+      --green-t: #ecfdf5;
+      --amber-t: #fffbeb;
+      --violet-t: #f5f3ff;
+      --rose-t: #fff1f3;
+      --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 24px rgba(15, 23, 42, .06);
+      --shadow-lift: 0 8px 16px rgba(15, 23, 42, .08), 0 20px 48px rgba(15, 23, 42, .12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    body {
+      font-family: 'Poppins', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+      padding: 34px 22px 70px;
+      min-height: 100vh
+    }
+
+    .wrap {
+      max-width: 1240px;
+      margin: 0 auto
+    }
+
+    /* HEADER */
+    header {
+      text-align: center;
+      margin-bottom: 26px
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--blue-t);
+      color: var(--blue);
+      font-weight: 700;
+      font-size: 11.5px;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      padding: 7px 16px;
+      border-radius: 999px;
+      margin-bottom: 18px
+    }
+
+    .eyebrow .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--blue)
+    }
+
+    h1 {
+      font-weight: 800;
+      font-size: clamp(28px, 5vw, 46px);
+      line-height: 1.04;
+      letter-spacing: -1px
+    }
+
+    h1 .accent {
+      color: var(--blue)
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 400;
+      margin-top: 12px;
+      max-width: 620px;
+      margin-left: auto;
+      margin-right: auto
+    }
+
+    .divider {
+      width: 60px;
+      height: 4px;
+      border-radius: 4px;
+      margin: 22px auto 0;
+      background: linear-gradient(90deg, var(--blue), var(--teal))
+    }
+
+    /* UPLOAD */
+    .upload-card {
+      background: var(--card);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 54px 30px;
+      text-align: center;
+      transition: .25s ease;
+      max-width: 640px;
+      margin: 24px auto 0;
+      cursor: pointer
+    }
+
+    .upload-card.drag,
+    .upload-card:hover {
+      border-color: var(--blue);
+      background: var(--blue-t);
+      transform: translateY(-2px)
+    }
+
+    .upload-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      background: var(--blue-t);
+      display: grid;
+      place-items: center;
+      margin: 0 auto 18px
+    }
+
+    .upload-icon svg {
+      width: 30px;
+      height: 30px;
+      stroke: var(--blue)
+    }
+
+    .upload-card h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px
+    }
+
+    .upload-card p {
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 420px;
+      margin: 0 auto 22px;
+      line-height: 1.5
+    }
+
+    .btn {
+      font-family: inherit;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      border-radius: 10px;
+      transition: .18s;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px
+    }
+
+    .btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round
+    }
+
+    .btn-blue {
+      background: var(--blue);
+      color: #fff;
+      padding: 11px 20px;
+      font-size: 13px;
+      box-shadow: 0 6px 16px rgba(37, 99, 235, .28)
+    }
+
+    .btn-blue:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px)
+    }
+
+    .btn-ghost {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 10px 16px;
+      font-size: 12.5px;
+      box-shadow: var(--shadow)
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--blue);
+      color: var(--blue)
+    }
+
+    .btn-link {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 6px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .btn-link:hover {
+      color: var(--blue)
+    }
+
+    .sample-link {
+      display: block;
+      margin-top: 16px;
+      color: var(--soft);
+      font-size: 12.5px;
+      font-weight: 500
+    }
+
+    .sample-link b {
+      color: var(--blue);
+      cursor: pointer;
+      text-decoration: underline
+    }
+
+    .hint {
+      margin-top: 18px;
+      font-size: 11.5px;
+      color: var(--soft)
+    }
+
+    /* FILTER BAR */
+    .action-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px
+    }
+
+    .filterbar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 22px;
+      box-shadow: var(--shadow)
+    }
+
+    .fbar-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center
+    }
+
+    .fbar-row+.fbar-row {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border)
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--muted)
+    }
+
+    .livedot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      position: relative
+    }
+
+    .livedot::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      background: var(--green);
+      opacity: .35;
+      animation: pulse 1.8s infinite
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        opacity: .45
+      }
+
+      70% {
+        transform: scale(2.4);
+        opacity: 0
+      }
+
+      100% {
+        opacity: 0
+      }
+    }
+
+    .fselect {
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 12.5px;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 32px 9px 14px;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      min-width: 140px
+    }
+
+    .fselect:hover {
+      border-color: var(--blue)
+    }
+
+    .fselect:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px var(--blue-t)
+    }
+
+    .daterange {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px 12px
+    }
+
+    .daterange .lbl {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--soft);
+      letter-spacing: .6px
+    }
+
+    .daterange .arrow {
+      color: var(--soft);
+      font-weight: 600
+    }
+
+    .fdate {
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--ink);
+      border: none;
+      background: transparent;
+      padding: 6px 0;
+      outline: none;
+      width: 130px
+    }
+
+    .fdate::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      opacity: .5;
+      filter: invert(.4)
+    }
+
+    .fdate:hover::-webkit-calendar-picker-indicator {
+      opacity: .85
+    }
+
+    .spacer {
+      flex: 1
+    }
+
+    .status {
+      font-size: 11.5px;
+      color: var(--soft);
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px
+    }
+
+    .status .sd {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--soft)
+    }
+
+    .status.fresh .sd {
+      background: var(--green)
+    }
+
+    .status.refreshing {
+      color: var(--blue)
+    }
+
+    .status.refreshing .sd {
+      background: var(--blue);
+      animation: blink .6s infinite
+    }
+
+    @keyframes blink {
+      50% {
+        opacity: .25
+      }
+    }
+
+    /* GRID + CARDS */
+    .grid {
+      display: grid;
+      gap: 18px
+    }
+
+    .g4 {
+      grid-template-columns: repeat(4, 1fr)
+    }
+
+    .g3 {
+      grid-template-columns: repeat(3, 1fr)
+    }
+
+    .g2 {
+      grid-template-columns: repeat(2, 1fr)
+    }
+
+    .mb {
+      margin-bottom: 18px
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow);
+      transition: transform .2s ease, box-shadow .2s ease
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lift)
+    }
+
+    .card-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--ink)
+    }
+
+    .card-sub {
+      font-size: 12px;
+      color: var(--soft);
+      font-weight: 400;
+      margin-top: 2px
+    }
+
+    .card-head {
+      margin-bottom: 14px
+    }
+
+    /* KPI */
+    .kpi {
+      position: relative;
+      padding: 20px 22px;
+      border-left: 5px solid var(--blue);
+      overflow: hidden
+    }
+
+    .kpi.t-blue {
+      border-color: var(--blue)
+    }
+
+    .kpi.t-teal {
+      border-color: var(--teal)
+    }
+
+    .kpi.t-amber {
+      border-color: var(--amber)
+    }
+
+    .kpi.t-rose {
+      border-color: var(--rose)
+    }
+
+    .kpi-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: .3px
+    }
+
+    .kpi-ic {
+      width: 38px;
+      height: 38px;
+      border-radius: 11px;
+      display: grid;
+      place-items: center
+    }
+
+    .kpi-ic svg {
+      width: 20px;
+      height: 20px
+    }
+
+    .t-blue .kpi-ic {
+      background: var(--blue-t)
+    }
+
+    .t-blue .kpi-ic svg {
+      stroke: var(--blue)
+    }
+
+    .t-teal .kpi-ic {
+      background: var(--teal-t)
+    }
+
+    .t-teal .kpi-ic svg {
+      stroke: var(--teal)
+    }
+
+    .t-amber .kpi-ic {
+      background: var(--amber-t)
+    }
+
+    .t-amber .kpi-ic svg {
+      stroke: var(--amber)
+    }
+
+    .t-rose .kpi-ic {
+      background: var(--rose-t)
+    }
+
+    .t-rose .kpi-ic svg {
+      stroke: var(--rose)
+    }
+
+    .kpi-val {
+      font-size: 30px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -.5px
+    }
+
+    .kpi-meta {
+      font-size: 12px;
+      color: var(--soft);
+      font-weight: 500;
+      margin-top: 8px
+    }
+
+    .kpi-meta b {
+      font-weight: 700
+    }
+
+    .t-blue .kpi-meta b {
+      color: var(--blue)
+    }
+
+    .t-teal .kpi-meta b {
+      color: var(--teal)
+    }
+
+    .t-amber .kpi-meta b {
+      color: var(--amber)
+    }
+
+    .kpi.clickable-kpi {
+      cursor: pointer
+    }
+
+    .chart {
+      width: 100%;
+      height: 320px
+    }
+
+    .chart-sm {
+      width: 100%;
+      height: 260px
+    }
+
+    /* TABLE */
+    .tbl-wrap {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border)
+    }
+
+    .tbl-wrap.scroll {
+      max-height: 380px;
+      overflow-y: auto
+    }
+
+    .tbl-wrap.scroll thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      box-shadow: 0 1px 0 var(--border)
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px
+    }
+
+    th {
+      background: #f8fafc;
+      text-align: left;
+      padding: 11px 14px;
+      font-weight: 700;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--border)
+    }
+
+    /* card head with right-side action */
+    .card-head.with-action {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap
+    }
+
+    .head-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap
+    }
+
+    .search-input {
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--ink);
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 14px 8px 34px;
+      outline: none;
+      width: 240px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: 11px center;
+      transition: .15s
+    }
+
+    .search-input:focus {
+      border-color: var(--blue);
+      background-color: #fff;
+      box-shadow: 0 0 0 3px var(--blue-t)
+    }
+
+    .search-input::placeholder {
+      color: var(--soft)
+    }
+
+    .muted-counter {
+      font-size: 11.5px;
+      color: var(--soft);
+      font-weight: 500
+    }
+
+    /* chart summary strip */
+    .chart-summary {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      padding-top: 14px;
+      margin-top: 10px;
+      border-top: 1px solid var(--border)
+    }
+
+    .cs-cell {
+      flex: 1;
+      min-width: 110px
+    }
+
+    .cs-cell span {
+      display: block;
+      font-size: 10.5px;
+      color: var(--soft);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 4px
+    }
+
+    .cs-cell b {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -.3px
+    }
+
+    .cs-cell b.hl {
+      color: var(--green)
+    }
+
+    .cs-cell b.warn {
+      color: var(--amber)
+    }
+
+    .cs-cell b.bad {
+      color: var(--rose)
+    }
+
+    td {
+      padding: 11px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      white-space: nowrap;
+      color: var(--ink);
+      font-weight: 500
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none
+    }
+
+    tbody tr.clickable {
+      cursor: pointer;
+      transition: background .12s
+    }
+
+    tbody tr.clickable:hover {
+      background: var(--blue-t)
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600
+    }
+
+    .tag-rose {
+      background: var(--rose-t);
+      color: var(--rose)
+    }
+
+    .tag-amber {
+      background: var(--amber-t);
+      color: var(--amber)
+    }
+
+    .tag-green {
+      background: var(--green-t);
+      color: var(--green)
+    }
+
+    .tag-blue {
+      background: var(--blue-t);
+      color: var(--blue)
+    }
+
+    .tag-violet {
+      background: var(--violet-t);
+      color: var(--violet)
+    }
+
+    .tag-teal {
+      background: var(--teal-t);
+      color: var(--teal)
+    }
+
+    .tag-slate {
+      background: #f1f5f9;
+      color: var(--soft)
+    }
+
+    .chem-yes {
+      color: var(--green);
+      font-weight: 700
+    }
+
+    .chem-no {
+      color: var(--soft)
+    }
+
+    .drill-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 6px
+    }
+
+    .drill-meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 14px 0 18px
+    }
+
+    .meta-chip {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-size: 12px
+    }
+
+    .meta-chip span {
+      display: block;
+      color: var(--soft);
+      font-size: 10.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      margin-bottom: 3px
+    }
+
+    .meta-chip b {
+      font-size: 15px;
+      font-weight: 700
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--soft);
+      padding: 40px 20px;
+      font-size: 13px
+    }
+
+    .empty svg {
+      width: 34px;
+      height: 34px;
+      stroke: var(--soft);
+      margin-bottom: 10px
+    }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--soft);
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin: 30px 4px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border)
+    }
+
+    .fade-up {
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeUp .55s cubic-bezier(.22, 1, .36, 1) forwards
+    }
+
+    @keyframes fadeUp {
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    .hidden {
+      display: none !important
+    }
+
+    /* BOOT / LIVE-LOADING SCREEN */
+    .boot-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 54px 30px;
+      text-align: center;
+      max-width: 560px;
+      margin: 24px auto 0;
+      box-shadow: var(--shadow)
+    }
+
+    .boot-card h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px
+    }
+
+    .boot-card p {
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 420px;
+      margin: 0 auto;
+      line-height: 1.5
+    }
+
+    .boot-spinner {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: 4px solid var(--blue-t);
+      border-top-color: var(--blue);
+      margin: 0 auto 20px;
+      animation: bootspin .8s linear infinite
+    }
+
+    .boot-spinner.err {
+      animation: none;
+      border: 4px solid var(--rose-t);
+      border-top-color: var(--rose);
+      position: relative
+    }
+
+    .boot-spinner.err::after {
+      content: '!';
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: var(--rose);
+      font-weight: 800;
+      font-size: 22px
+    }
+
+    @keyframes bootspin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .boot-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 24px
+    }
+
+    .boot-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 380px;
+      margin: 22px auto 0;
+      text-align: left
+    }
+
+    .boot-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 13px
+    }
+
+    .boot-step .bs-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--soft);
+      flex-shrink: 0
+    }
+
+    .boot-step .bs-lbl {
+      flex: 1;
+      font-weight: 600;
+      color: var(--ink)
+    }
+
+    .boot-step .bs-state {
+      font-size: 12px;
+      color: var(--soft);
+      font-weight: 500
+    }
+
+    .boot-step.loading .bs-dot {
+      background: var(--blue);
+      animation: bspulse 1s ease-in-out infinite
+    }
+
+    .boot-step.loading .bs-state {
+      color: var(--blue)
+    }
+
+    .boot-step.ok .bs-dot {
+      background: var(--green)
+    }
+
+    .boot-step.ok .bs-state {
+      color: var(--green)
+    }
+
+    .boot-step.err .bs-dot {
+      background: var(--rose)
+    }
+
+    .boot-step.err .bs-state {
+      color: var(--rose)
+    }
+
+    @keyframes bspulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1
+      }
+
+      50% {
+        transform: scale(1.4);
+        opacity: .5
+      }
+    }
+
+    .boot-err {
+      max-width: 460px;
+      margin: 18px auto 0;
+      padding: 12px 14px;
+      background: var(--rose-t);
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      font-size: 12.5px;
+      color: #991b1b;
+      text-align: left;
+      line-height: 1.55;
+      word-break: break-word
+    }
+
+    .boot-err b {
+      color: var(--rose)
+    }
+
+    .boot-err code {
+      background: #fff;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 11.5px
+    }
+
+    /* ── 980 px: tablet landscape ── */
+    @media(max-width:980px) {
+      .g4 {
+        grid-template-columns: repeat(2, 1fr)
+      }
+
+      .g3,
+      .g2 {
+        grid-template-columns: 1fr
+      }
+    }
+
+    /* ── 768 px: tablet portrait ── */
+    @media(max-width:768px) {
+      body {
+        padding: 20px 14px 50px
+      }
+
+      .chart {
+        height: 260px
+      }
+
+      .chart-sm {
+        height: 200px
+      }
+
+      .card-head.with-action {
+        flex-direction: column;
+        gap: 10px
+      }
+
+      .head-actions {
+        width: 100%
+      }
+
+      .search-input {
+        width: 100%
+      }
+
+      .drill-meta {
+        flex-wrap: wrap
+      }
+
+      .meta-chip {
+        flex: 1;
+        min-width: calc(50% - 6px)
+      }
+    }
+
+    /* ── 560 px: phone ── */
+    @media(max-width:560px) {
+      body {
+        padding: 14px 10px 36px
+      }
+
+      /* grids */
+      .g4,
+      .g3,
+      .g2 {
+        grid-template-columns: 1fr
+      }
+
+      .grid {
+        gap: 12px
+      }
+
+      .mb {
+        margin-bottom: 12px
+      }
+
+      /* selects: 2 per row */
+      .fselect {
+        flex: 1 1 calc(50% - 4px);
+        min-width: 0 !important
+      }
+
+      /* charts */
+      .chart {
+        height: 200px
+      }
+
+      .chart-sm {
+        height: 165px
+      }
+
+      /* cards */
+      .card {
+        padding: 14px 12px
+      }
+
+      .kpi {
+        padding: 14px 16px
+      }
+
+      .kpi-val {
+        font-size: 22px
+      }
+
+      .kpi-meta {
+        font-size: 11px
+      }
+
+      /* filter bar */
+      .filterbar {
+        padding: 10px 12px
+      }
+
+      .fbar-row {
+        gap: 8px
+      }
+
+      /* second filter row: date on top, buttons below */
+      .fbar-row+.fbar-row {
+        flex-wrap: wrap;
+        row-gap: 8px
+      }
+
+      .daterange {
+        width: 100%
+      }
+
+      .fdate {
+        flex: 1;
+        min-width: 0;
+        width: auto
+      }
+
+      .spacer {
+        display: none
+      }
+
+      #resetBtn,
+      #refreshBtn {
+        flex: 1;
+        justify-content: center
+      }
+
+      #exportBtn {
+        width: 100%;
+        justify-content: center
+      }
+
+      #statusTxt {
+        width: 100%;
+        justify-content: center
+      }
+
+      /* pending table search */
+      .card-head.with-action {
+        flex-direction: column;
+        gap: 10px
+      }
+
+      .head-actions {
+        width: 100%;
+        flex-direction: column
+      }
+
+      .search-input {
+        width: 100%;
+        max-width: 100%
+      }
+
+      /* flow chart local picker */
+      #flowView {
+        min-width: 0 !important;
+        width: 100%
+      }
+
+      /* drill */
+      .drill-head {
+        flex-direction: column;
+        align-items: stretch
+      }
+
+      #lotSel {
+        margin-left: 0 !important;
+        min-width: 0 !important;
+        width: 100%
+      }
+
+      /* chart summary strip */
+      .chart-summary {
+        gap: 8px
+      }
+
+      .cs-cell {
+        min-width: 60px
+      }
+
+      .cs-cell b {
+        font-size: 14px
+      }
+
+      /* upload */
+      .upload-card {
+        padding: 36px 20px
+      }
+
+      /* misc */
+      .section-label {
+        margin: 18px 4px 10px
+      }
+
+      .action-row {
+        margin-bottom: 4px
+      }
+
+      .btn-link {
+        font-size: 12px
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      .fade-up {
+        animation: none;
+        opacity: 1;
+        transform: none
+      }
+
+      .livedot::after,
+      .status.refreshing .sd {
+        animation: none
+      }
+    }
+
+    /* PRINT - Export PDF via browser */
+    @media print {
+      body {
+        background: #fff;
+        padding: 14px;
+        color: #000
+      }
+
+      .action-row,
+      .filterbar .fbar-row:last-child {
+        display: none
+      }
+
+      .filterbar {
+        box-shadow: none;
+        border: none;
+        padding: 0;
+        margin-bottom: 14px
+      }
+
+      .card {
+        box-shadow: none !important;
+        border: 1px solid #e2e8f0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        transform: none !important
+      }
+
+      .card:hover {
+        transform: none !important;
+        box-shadow: none !important
+      }
+
+      .grid {
+        gap: 10px
+      }
+
+      .section-label {
+        margin-top: 14px
+      }
+
+      header {
+        margin-bottom: 14px
+      }
+
+      h1 {
+        font-size: 26px
+      }
+
+      .subtitle,
+      .divider {
+        display: none
+      }
+
+      .pill {
+        background: #fff;
+        border: 1px solid #e2e8f0
+      }
+
+      .livedot::after {
+        display: none
+      }
+
+      .chart {
+        height: 280px
+      }
+
+      .chart-sm {
+        height: 220px
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+
+    <header class="fade-up">
+      <span class="eyebrow"><span class="dot"></span> ExactChoice · Washing Plant</span>
+      <h1>Washing Plant <span class="accent">Performance</span></h1>
+      <p class="subtitle">Party-wise in-factory lots, monthly IN / OUT flow, and exact chemical usage per lot — one
+        screen.</p>
+      <div class="divider"></div>
+    </header>
+
+    <!-- BOOT / LIVE-LOADING SCREEN (shown first; the upload screen below is fallback only) -->
+    <div id="bootScreen">
+      <div class="boot-card">
+        <div class="boot-spinner" id="bootSpinner"></div>
+        <h3 id="bootTitle">Connecting to live data…</h3>
+        <p id="bootMsg">Fetching the IN/OUT register and chemical sheet from Google Sheets.</p>
+
+        <div id="bootSteps" class="boot-steps">
+          <div class="boot-step" id="step-reg"><span class="bs-dot"></span> <span class="bs-lbl">Register API</span>
+            <span class="bs-state">waiting…</span>
+          </div>
+          <div class="boot-step" id="step-chem"><span class="bs-dot"></span> <span class="bs-lbl">Chemical API</span>
+            <span class="bs-state">waiting…</span>
+          </div>
+        </div>
+
+        <div id="bootErrBox" class="boot-err hidden"></div>
+
+        <div id="bootActions" class="boot-actions hidden">
+          <button class="btn btn-blue" id="bootRetry">Retry live fetch</button>
+          <button class="btn btn-ghost" id="bootUpload">Upload files instead</button>
+          <button class="btn btn-ghost" id="bootSample">Load sample data</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- UPLOAD SCREEN -->
+    <div id="uploadScreen" class="hidden">
+      <div class="upload-card" id="dropzone">
+        <div class="upload-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+        </div>
+        <h3>Upload your monthly JSON exports</h3>
+        <p>Drop the <b>IN/OUT register</b> and the <b>chemical sheet</b> (one or both). The dashboard auto-detects each
+          file and links them by lot number.</p>
+        <button class="btn btn-blue" id="pickBtn">Choose JSON files</button>
+        <input type="file" id="fileInput" accept=".json,application/json" multiple hidden>
+        <span class="sample-link">Just want to see it? <b id="sampleBtn">Load sample data</b></span>
+        <div class="hint">Supported: party register (PARTY NAME, IN_PCS, OUT_PCS, LOT, MONTH) · chemical sheet (Lot No.,
+          PCS, Type, chemicals)</div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="hidden">
+      <div class="action-row">
+        <button class="btn-link" id="newDataBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          Upload new files
+        </button>
+      </div>
+
+      <div class="filterbar fade-up">
+        <div class="fbar-row">
+          <span class="pill"><span class="livedot"></span><span id="recCount">—</span></span>
+          <select id="fMonth" class="fselect">
+            <option value="">All Months</option>
+          </select>
+          <select id="fWash" class="fselect">
+            <option value="">All Washes</option>
+          </select>
+          <select id="fParty" class="fselect">
+            <option value="">All Parties</option>
+          </select>
+          <input id="fLot" class="fselect" list="lotList" placeholder="All Lots — search…"
+            autocomplete="off" style="cursor:text;min-width:180px;background-image:none;padding-right:14px">
+          <datalist id="lotList"></datalist>
+        </div>
+        <div class="fbar-row">
+          <div class="daterange">
+            <span class="lbl">FROM</span>
+            <input type="date" id="fFrom" class="fdate">
+            <span class="arrow">→</span>
+            <span class="lbl">TO</span>
+            <input type="date" id="fTo" class="fdate">
+          </div>
+          <span class="spacer"></span>
+          <button class="btn btn-ghost" id="resetBtn">
+            <svg viewBox="0 0 24 24">
+              <polyline points="1 4 1 10 7 10" />
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            </svg> Reset
+          </button>
+          <button class="btn btn-ghost" id="refreshBtn">
+            <svg viewBox="0 0 24 24">
+              <polyline points="23 4 23 10 17 10" />
+              <polyline points="1 20 1 14 7 14" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg> Refresh
+          </button>
+          <button class="btn btn-blue" id="exportBtn">
+            <svg viewBox="0 0 24 24">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg> Export PDF
+          </button>
+          <span class="status fresh" id="statusTxt"><span class="sd"></span> Showing saved data</span>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="grid g4 mb" id="kpiRow"></div>
+
+      <!-- Rewash status (only shown when a single lot is filtered) -->
+      <div class="card fade-up mb hidden" id="rewashCard">
+        <div class="card-head">
+          <div class="card-title">Rewash status</div>
+          <div class="card-sub" id="rewashSub">Rewash eligibility for the selected lot</div>
+        </div>
+        <div id="rewashBody"></div>
+      </div>
+
+      <!-- Row 1 -->
+      <div class="grid g2 mb">
+        <div class="card fade-up" style="animation-delay:.05s">
+          <div class="card-head with-action">
+            <div>
+              <div class="card-title" id="flowTitle">Monthly flow — IN vs OUT</div>
+              <div class="card-sub" id="flowSub">Pieces received vs dispatched, month on month</div>
+            </div>
+            <select id="flowView" class="fselect" style="min-width:140px">
+              <option value="all">All months</option>
+            </select>
+          </div>
+          <div id="flowChart" class="chart"></div>
+          <div class="chart-summary" id="flowSummary"></div>
+        </div>
+        <div class="card fade-up" style="animation-delay:.12s">
+          <div class="card-head">
+            <div class="card-title">Party volume share</div>
+            <div class="card-sub">Share of total pieces received (IN)</div>
+          </div>
+          <div id="partyDonut" class="chart"></div>
+        </div>
+      </div>
+
+      <!-- Row 2 : the two boss questions -->
+      <div class="grid g2 mb">
+        <div class="card fade-up" style="animation-delay:.18s">
+          <div class="card-head">
+            <div class="card-title">Party-wise In Factory</div>
+            <div class="card-sub">Pieces processing — biggest backlog on top</div>
+          </div>
+          <div id="pendingChart" class="chart"></div>
+        </div>
+        <div class="card fade-up" style="animation-delay:.24s">
+          <div class="card-head">
+            <div class="card-title" id="monthTitle">IN vs OUT by party</div>
+            <div class="card-sub" id="monthSub">Pieces in and out for the selected period</div>
+          </div>
+          <div id="monthChart" class="chart"></div>
+        </div>
+      </div>
+
+      <!-- Row 3 : process breakdown -->
+      <div class="section-label">Process breakdown</div>
+      <div class="grid g2 mb">
+        <div class="card fade-up" style="animation-delay:.05s">
+          <div class="card-head">
+            <div class="card-title">Pieces by process</div>
+            <div class="card-sub" id="procSub">Most-used process on top — bars show pieces, brackets show lots</div>
+          </div>
+          <div id="procChart" class="chart"></div>
+        </div>
+        <div class="card fade-up" style="animation-delay:.12s">
+          <div class="card-head">
+            <div class="card-title">Pieces by wash type</div>
+            <div class="card-sub" id="washSub">From the Process column — bars show pieces, brackets show lots</div>
+          </div>
+          <div id="washChart" class="chart"></div>
+        </div>
+      </div>
+
+      <!-- In-Factory lots action table -->
+      <div class="section-label">In-Factory lots — action list</div>
+      <div class="card fade-up mb" id="pendingCard" style="animation-delay:.05s">
+        <div class="card-head with-action">
+          <div>
+            <div class="card-title">Lots awaiting dispatch</div>
+            <div class="card-sub">Sorted by pending pieces. Rows with a chemical record are clickable → opens drilldown
+              below.</div>
+          </div>
+          <div class="head-actions">
+            <select id="tableFilter" class="fselect"
+              style="min-width:120px; height:34px; padding:6px 32px 6px 12px; margin-right:8px">
+              <option value="all">All Lots</option>
+              <option value="pending">In Factory Only</option>
+            </select>
+            <input type="text" class="search-input" id="pendSearch" placeholder="Search lot, party, article…">
+            <span class="muted-counter" id="pendCount"></span>
+          </div>
+        </div>
+        <div id="pendingTable"></div>
+      </div>
+
+      <!-- Chemical section -->
+      <div class="section-label">Chemical usage</div>
+      <div class="grid g2 mb">
+        <div class="card fade-up" style="animation-delay:.05s">
+          <div class="card-head">
+            <div class="card-title">Top chemicals used</div>
+            <div class="card-sub">Total quantity across filtered lots</div>
+          </div>
+          <div id="topChem" class="chart"></div>
+        </div>
+        <div class="card fade-up" id="drillCard" style="animation-delay:.12s">
+          <div class="drill-head">
+            <div>
+              <div class="card-title">Per-lot chemical record</div>
+              <div class="card-sub">Exactly what went into a selected lot</div>
+            </div>
+            <select id="lotSel" class="fselect" style="margin-left:auto;min-width:200px"></select>
+          </div>
+          <div id="drillBody"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ===== embedded sample data ===== */
+    const SAMPLE_REGISTER = [{ "S. NO.": "1", "PARTY NAME": "MARUTI", "IN_DATE": "20-5-2026", "IN CHALLAN": "", "LOT": "4129", "ARTICLE": "SHORTS", "IN_PCS": "439", "CHALLAN NO": "434", "OUT_DATE": "10-6-2026", "OUT_PCS": "439", "REWASH": "1 ✓", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "0", "HD WISHKAR": "", "PD WISHKAR": "439", "PAPER": "", "spray": "439", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "TOWLE" }, { "S. NO.": "2", "PARTY NAME": "ROYAL JEANS", "IN_DATE": "20-5-2026", "IN CHALLAN": "", "LOT": "4131", "ARTICLE": "JJ-33 BLACK", "IN_PCS": "320", "CHALLAN NO": "422", "OUT_DATE": "25-5-2026", "OUT_PCS": "320", "REWASH": "15 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "May", "Pending": "0", "HD WISHKAR": "", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "Hard Wash" }, { "S. NO.": "3", "PARTY NAME": "ROYAL JEANS", "IN_DATE": "20-5-2026", "IN CHALLAN": "", "LOT": "4094", "ARTICLE": "JJ-15 D BLUE", "IN_PCS": "480", "CHALLAN NO": "423", "OUT_DATE": "25-5-2026", "OUT_PCS": "480", "REWASH": "15 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "May", "Pending": "0", "HD WISHKAR": "", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "Blast" }, { "S. NO.": "4", "PARTY NAME": "ROYAL JEANS", "IN_DATE": "25-5-2026", "IN CHALLAN": "", "LOT": "4134", "ARTICLE": "JJ-18 BROWN", "IN_PCS": "384", "CHALLAN NO": "427", "OUT_DATE": "5-6-2026", "OUT_PCS": "384", "REWASH": "4 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "0", "HD WISHKAR": "", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "Towal" }, { "S. NO.": "5", "PARTY NAME": "MARUTI", "IN_DATE": "26-5-2026", "IN CHALLAN": "", "LOT": "4121", "ARTICLE": "JJ-18 BLACK", "IN_PCS": "1031", "CHALLAN NO": "425", "OUT_DATE": "28-5-2026", "OUT_PCS": "1031", "REWASH": "12 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "May", "Pending": "0", "HD WISHKAR": "", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "Blast" }, { "S. NO.": "6", "PARTY NAME": "MARUTI", "IN_DATE": "28-5-2026", "IN CHALLAN": "", "LOT": "4125", "ARTICLE": "JJ-33 DARK BLUE", "IN_PCS": "559", "CHALLAN NO": "431", "OUT_DATE": "6-6-2026", "OUT_PCS": "558", "REWASH": "3 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "1", "HD WISHKAR": "558", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "558", "DAMAGE": "", "HEAVY DAMAGE": "", "": "HDW" }, { "S. NO.": "7", "PARTY NAME": "MARUTI", "IN_DATE": "28-5-2026", "IN CHALLAN": "", "LOT": "4126", "ARTICLE": "JJ-33 LIGHT BLUE", "IN_PCS": "669", "CHALLAN NO": "428", "OUT_DATE": "5-6-2026", "OUT_PCS": "669", "REWASH": "4 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "0", "HD WISHKAR": "", "PD WISHKAR": "669", "PAPER": "", "spray": "", "tacking": "", "highlight": "669", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "669", "": "Hard Wash" }, { "S. NO.": "8", "PARTY NAME": "MARUTI", "IN_DATE": "28-5-2026", "IN CHALLAN": "", "LOT": "4125", "ARTICLE": "JJ-33 DARK BLUE", "IN_PCS": "1", "CHALLAN NO": "431", "OUT_DATE": "6-6-2026", "OUT_PCS": "1", "REWASH": "3 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "0", "HD WISHKAR": "", "PD WISHKAR": "", "PAPER": "431", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "431", "DAMAGE": "", "HEAVY DAMAGE": "431", "": "Blast" }, { "S. NO.": "9", "PARTY NAME": "MARUTI", "IN_DATE": "28-5-2026", "IN CHALLAN": "", "LOT": "4126", "ARTICLE": "", "IN_PCS": "1", "CHALLAN NO": "", "OUT_DATE": "", "OUT_PCS": "", "REWASH": "", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "", "Pending": "1", "HD WISHKAR": "", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "Towal" }, { "S. NO.": "10", "PARTY NAME": "MARUTI", "IN_DATE": "28-5-2026", "IN CHALLAN": "", "LOT": "4129", "ARTICLE": "", "IN_PCS": "1", "CHALLAN NO": "", "OUT_DATE": "", "OUT_PCS": "", "REWASH": "", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "", "Pending": "1", "HD WISHKAR": "", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "Blast" }, { "S. NO.": "11", "PARTY NAME": "MARUTI", "IN_DATE": "30-5-2026", "IN CHALLAN": "", "LOT": "4151", "ARTICLE": "JJ-33 GREY", "IN_PCS": "495", "CHALLAN NO": "432", "OUT_DATE": "9-6-2026", "OUT_PCS": "496", "REWASH": "0 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "-1", "HD WISHKAR": "496", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "BLAST" }, { "S. NO.": "12", "PARTY NAME": "MARUTI", "IN_DATE": "1-6-2026", "IN CHALLAN": "", "LOT": "4154", "ARTICLE": "JJ-27 BLACK", "IN_PCS": "228", "CHALLAN NO": "429", "OUT_DATE": "5-6-2026", "OUT_PCS": "228", "REWASH": "4 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "0", "HD WISHKAR": "", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "BY POLISH" }, { "S. NO.": "13", "PARTY NAME": "MARUTI", "IN_DATE": "1-6-2026", "IN CHALLAN": "", "LOT": "4155", "ARTICLE": "JJ-27 GREY", "IN_PCS": "259", "CHALLAN NO": "443", "OUT_DATE": "15-6-2026", "OUT_PCS": "259", "REWASH": "6 ✓", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "0", "HD WISHKAR": "259", "PD WISHKAR": "", "PAPER": "", "spray": "259", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "BLAST" }, { "S. NO.": "14", "PARTY NAME": "MARUTI", "IN_DATE": "1-6-2026", "IN CHALLAN": "", "LOT": "4146", "ARTICLE": "JJ-03 D BLUE", "IN_PCS": "1056", "CHALLAN NO": "433", "OUT_DATE": "10-6-2026", "OUT_PCS": "1056", "REWASH": "1 ✓", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "0", "HD WISHKAR": "", "PD WISHKAR": "1056", "PAPER": "", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "120 GREEN TINT" }, { "S. NO.": "15", "PARTY NAME": "MARUTI(SHREE)", "IN_DATE": "2-6-2026", "IN CHALLAN": "", "LOT": "3792", "ARTICLE": "", "IN_PCS": "907", "CHALLAN NO": "", "OUT_DATE": "", "OUT_PCS": "", "REWASH": "", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "", "Pending": "907", "HD WISHKAR": "", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "120 GREEN TINT" }, { "S. NO.": "16", "PARTY NAME": "MARUTI", "IN_DATE": "5-6-2026", "IN CHALLAN": "", "LOT": "4153", "ARTICLE": "JJ-03 GREY", "IN_PCS": "470", "CHALLAN NO": "435", "OUT_DATE": "11-6-2026", "OUT_PCS": "470", "REWASH": "2 ✓", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "0", "HD WISHKAR": "470", "PD WISHKAR": "", "PAPER": "", "spray": "470", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "HDW" }, { "S. NO.": "17", "PARTY NAME": "MARUTI", "IN_DATE": "5-6-2026", "IN CHALLAN": "", "LOT": "4156", "ARTICLE": "JJ-12 L BLUE", "IN_PCS": "933", "CHALLAN NO": "437", "OUT_DATE": "12-6-2026", "OUT_PCS": "933", "REWASH": "3 ✓", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "0", "HD WISHKAR": "", "PD WISHKAR": "933", "PAPER": "933", "spray": "933", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "BLAST" }, { "S. NO.": "18", "PARTY NAME": "MARUTI", "IN_DATE": "6-6-2026", "IN CHALLAN": "", "LOT": "4158", "ARTICLE": "JJ-24 GREY", "IN_PCS": "245", "CHALLAN NO": "245", "OUT_DATE": "12-6-2026", "OUT_PCS": "245", "REWASH": "3 ✓", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "0", "HD WISHKAR": "245", "PD WISHKAR": "", "PAPER": "245", "spray": "245", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "BLAST" }, { "S. NO.": "19", "PARTY NAME": "MARUTI", "IN_DATE": "6-6-2026", "IN CHALLAN": "", "LOT": "4159", "ARTICLE": "JJ-24 KHAKHI", "IN_PCS": "270", "CHALLAN NO": "445", "OUT_DATE": "18-6-2026", "OUT_PCS": "270", "REWASH": "9 ✓", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "0", "HD WISHKAR": "270", "PD WISHKAR": "", "PAPER": "", "spray": "270", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "BLAST" }, { "S. NO.": "20", "PARTY NAME": "MARUTI", "IN_DATE": "6-6-2026", "IN CHALLAN": "", "LOT": "4140", "ARTICLE": "JJ-33 LOWER", "IN_PCS": "579", "CHALLAN NO": "442", "OUT_DATE": "15-6-2026", "OUT_PCS": "579", "REWASH": "6 ✓", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "0", "HD WISHKAR": "", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "BY POLISH" }, { "S. NO.": "21", "PARTY NAME": "ROYAL JEANS", "IN_DATE": "8-6-2026", "IN CHALLAN": "", "LOT": "4145", "ARTICLE": "JJ-24 L BLUE", "IN_PCS": "648", "CHALLAN NO": "439", "OUT_DATE": "13-6-2026", "OUT_PCS": "647", "REWASH": "4 ✓", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "1", "HD WISHKAR": "647", "PD WISHKAR": "", "PAPER": "", "spray": "647", "tacking": "", "highlight": "", "BACK WISHKAR": "647", "DAMAGE": "", "HEAVY DAMAGE": "", "": "BLAST" }, { "S. NO.": "22", "PARTY NAME": "ROYAL JEANS", "IN_DATE": "9-6-2026", "IN CHALLAN": "", "LOT": "4128", "ARTICLE": "", "IN_PCS": "576", "CHALLAN NO": "", "OUT_DATE": "", "OUT_PCS": "", "REWASH": "", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "", "Pending": "576", "HD WISHKAR": "", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "BLAST" }, { "S. NO.": "23", "PARTY NAME": "ROYAL JEANS", "IN_DATE": "9-6-2026", "IN CHALLAN": "", "LOT": "4147", "ARTICLE": "JJ-18 D BLUE", "IN_PCS": "276", "CHALLAN NO": "441", "OUT_DATE": "15-06-2026", "OUT_PCS": "276", "REWASH": "6 ✓", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "0", "HD WISHKAR": "", "PD WISHKAR": "276", "PAPER": "", "spray": "276", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "GREEN TINT" }, { "S. NO.": "24", "PARTY NAME": "ROYAL JEANS", "IN_DATE": "11-6-2026", "IN CHALLAN": "", "LOT": "4149", "ARTICLE": "JJ-18 BLACK", "IN_PCS": "995", "CHALLAN NO": "440", "OUT_DATE": "13-6-2026", "OUT_PCS": "448", "REWASH": "4 ✓", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "547", "HD WISHKAR": "", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "BLACK BY POLISH" }, { "S. NO.": "25", "PARTY NAME": "MARUTI", "IN_DATE": "11-6-2026", "IN CHALLAN": "", "LOT": "4157", "ARTICLE": "", "IN_PCS": "824", "CHALLAN NO": "", "OUT_DATE": "", "OUT_PCS": "", "REWASH": "", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "", "Pending": "824", "HD WISHKAR": "", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "BLACK BY POLISH" }, { "S. NO.": "26", "PARTY NAME": "ROYAL JEANS", "IN_DATE": "12-6-2026", "IN CHALLAN": "", "LOT": "4147", "ARTICLE": "JJ-18 BLUE", "IN_PCS": "744", "CHALLAN NO": "447", "OUT_DATE": "18-6-2026", "OUT_PCS": "744", "REWASH": "9 ✓", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "0", "HD WISHKAR": "", "PD WISHKAR": "744", "PAPER": "", "spray": "744", "tacking": "", "highlight": "", "BACK WISHKAR": "744", "DAMAGE": "744", "HEAVY DAMAGE": "", "": "200 PCS GREEN TINT" }, { "S. NO.": "27", "PARTY NAME": "MARUTI", "IN_DATE": "12-6-2026", "IN CHALLAN": "", "LOT": "4166", "ARTICLE": "", "IN_PCS": "1044", "CHALLAN NO": "", "OUT_DATE": "", "OUT_PCS": "", "REWASH": "#REF!", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "", "Pending": "1044", "HD WISHKAR": "", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "200 PCS GREEN TINT" }, { "S. NO.": "28", "PARTY NAME": "EC WASHING", "IN_DATE": "", "IN CHALLAN": "", "LOT": "1281", "ARTICLE": "", "IN_PCS": "480", "CHALLAN NO": "494", "OUT_DATE": "30-5-2026", "OUT_PCS": "147", "REWASH": "10 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "May", "Pending": "333", "HD WISHKAR": "", "PD WISHKAR": "147", "PAPER": "147", "spray": "147", "tacking": "147", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "Hard Wash" }, { "S. NO.": "29", "PARTY NAME": "EC WASHING", "IN_DATE": "", "IN CHALLAN": "", "LOT": "1339", "ARTICLE": "", "IN_PCS": "370", "CHALLAN NO": "497", "OUT_DATE": "2-6-2026", "OUT_PCS": "375", "REWASH": "7 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "-5", "HD WISHKAR": "375", "PD WISHKAR": "", "PAPER": "375", "spray": "375", "tacking": "375", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "Blast" }, { "S. NO.": "30", "PARTY NAME": "EC WASHING", "IN_DATE": "", "IN CHALLAN": "", "LOT": "1366", "ARTICLE": "", "IN_PCS": "522", "CHALLAN NO": "488", "OUT_DATE": "12-4-2026", "OUT_PCS": "522", "REWASH": "58 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "April", "Pending": "0", "HD WISHKAR": "", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "Towal" }, { "S. NO.": "31", "PARTY NAME": "EC WASHING", "IN_DATE": "", "IN CHALLAN": "", "LOT": "1358", "ARTICLE": "", "IN_PCS": "405", "CHALLAN NO": "487", "OUT_DATE": "12-4-2026", "OUT_PCS": "405", "REWASH": "58 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "April", "Pending": "0", "HD WISHKAR": "", "PD WISHKAR": "405", "PAPER": "", "spray": "405", "tacking": "", "highlight": "", "BACK WISHKAR": "405", "DAMAGE": "", "HEAVY DAMAGE": "405", "": "Blast" }, { "S. NO.": "32", "PARTY NAME": "EC WASHING", "IN_DATE": "", "IN CHALLAN": "", "LOT": "1371", "ARTICLE": "", "IN_PCS": "504", "CHALLAN NO": "601", "OUT_DATE": "6-6-2026", "OUT_PCS": "504", "REWASH": "3 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "0", "HD WISHKAR": "504", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "504", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "504", "": "HDW" }, { "S. NO.": "33", "PARTY NAME": "EC WASHING", "IN_DATE": "", "IN CHALLAN": "", "LOT": "1374", "ARTICLE": "", "IN_PCS": "402", "CHALLAN NO": "602", "OUT_DATE": "6-6-2026", "OUT_PCS": "403", "REWASH": "3 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "-1", "HD WISHKAR": "", "PD WISHKAR": "403", "PAPER": "", "spray": "403", "tacking": "", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "403", "HEAVY DAMAGE": "", "": "Hard Wash" }, { "S. NO.": "34", "PARTY NAME": "EC WASHING", "IN_DATE": "", "IN CHALLAN": "", "LOT": "1370", "ARTICLE": "", "IN_PCS": "384", "CHALLAN NO": "BUNTY", "OUT_DATE": "22-5-2026", "OUT_PCS": "384", "REWASH": "18 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "May", "Pending": "0", "HD WISHKAR": "", "PD WISHKAR": "384", "PAPER": "", "spray": "384", "tacking": "", "highlight": "", "BACK WISHKAR": "384", "DAMAGE": "", "HEAVY DAMAGE": "", "": "Blast" }, { "S. NO.": "35", "PARTY NAME": "EC WASHING", "IN_DATE": "", "IN CHALLAN": "", "LOT": "1375", "ARTICLE": "", "IN_PCS": "375", "CHALLAN NO": "BUNTY", "OUT_DATE": "22-5-2026", "OUT_PCS": "375", "REWASH": "18 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "May", "Pending": "0", "HD WISHKAR": "375", "PD WISHKAR": "", "PAPER": "", "spray": "375", "tacking": "", "highlight": "", "BACK WISHKAR": "375", "DAMAGE": "", "HEAVY DAMAGE": "375", "": "Towal" }, { "S. NO.": "36", "PARTY NAME": "EC WASHING", "IN_DATE": "", "IN CHALLAN": "", "LOT": "1376", "ARTICLE": "", "IN_PCS": "414", "CHALLAN NO": "498", "OUT_DATE": "2-6-2026", "OUT_PCS": "414", "REWASH": "7 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "0", "HD WISHKAR": "414", "PD WISHKAR": "", "PAPER": "414", "spray": "414", "tacking": "414", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "Blast" }, { "S. NO.": "37", "PARTY NAME": "EC WASHING", "IN_DATE": "", "IN CHALLAN": "", "LOT": "371", "ARTICLE": "", "IN_PCS": "498", "CHALLAN NO": "496", "OUT_DATE": "2-6-2026", "OUT_PCS": "493", "REWASH": "7 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "June", "Pending": "5", "HD WISHKAR": "", "PD WISHKAR": "", "PAPER": "498", "spray": "", "tacking": "498", "highlight": "", "BACK WISHKAR": "498", "DAMAGE": "", "HEAVY DAMAGE": "", "": "HDW" }, { "S. NO.": "38", "PARTY NAME": "EC WASHING", "IN_DATE": "", "IN CHALLAN": "", "LOT": "385", "ARTICLE": "", "IN_PCS": "740", "CHALLAN NO": "493", "OUT_DATE": "30-5-2026", "OUT_PCS": "740", "REWASH": "10 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "May", "Pending": "0", "HD WISHKAR": "740", "PD WISHKAR": "", "PAPER": "740", "spray": "", "tacking": "740", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "740", "": "Hard Wash" }, { "S. NO.": "39", "PARTY NAME": "EC WASHING", "IN_DATE": "", "IN CHALLAN": "", "LOT": "381", "ARTICLE": "", "IN_PCS": "690", "CHALLAN NO": "493", "OUT_DATE": "30-5-2026", "OUT_PCS": "687", "REWASH": "10 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "May", "Pending": "3", "HD WISHKAR": "687", "PD WISHKAR": "", "PAPER": "687", "spray": "", "tacking": "687", "highlight": "", "BACK WISHKAR": "687", "DAMAGE": "", "HEAVY DAMAGE": "", "": "Blast" }, { "S. NO.": "40", "PARTY NAME": "EC WASHING", "IN_DATE": "", "IN CHALLAN": "", "LOT": "372", "ARTICLE": "", "IN_PCS": "470", "CHALLAN NO": "BUNTY", "OUT_DATE": "22-5-2026", "OUT_PCS": "470", "REWASH": "18 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "May", "Pending": "0", "HD WISHKAR": "470", "PD WISHKAR": "", "PAPER": "470", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "470", "DAMAGE": "", "HEAVY DAMAGE": "", "": "Towal" }, { "S. NO.": "41", "PARTY NAME": "EC WASHING", "IN_DATE": "", "IN CHALLAN": "", "LOT": "320", "ARTICLE": "", "IN_PCS": "107", "CHALLAN NO": "493", "OUT_DATE": "30-5-2026", "OUT_PCS": "107", "REWASH": "10 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "May", "Pending": "0", "HD WISHKAR": "107", "PD WISHKAR": "", "PAPER": "107", "spray": "", "tacking": "107", "highlight": "", "BACK WISHKAR": "", "DAMAGE": "", "HEAVY DAMAGE": "", "": "Hard Wash" }, { "S. NO.": "42", "PARTY NAME": "EC WASHING", "IN_DATE": "", "IN CHALLAN": "", "LOT": "351", "ARTICLE": "", "IN_PCS": "538", "CHALLAN NO": "ANUP", "OUT_DATE": "8-5-2026", "OUT_PCS": "538", "REWASH": "32 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "May", "Pending": "0", "HD WISHKAR": "538", "PD WISHKAR": "", "PAPER": "538", "spray": "", "tacking": "", "highlight": "", "BACK WISHKAR": "351", "DAMAGE": "", "HEAVY DAMAGE": "", "": "Blast" }, { "S. NO.": "43", "PARTY NAME": "EC WASHING", "IN_DATE": "", "IN CHALLAN": "", "LOT": "247", "ARTICLE": "", "IN_PCS": "960", "CHALLAN NO": "ANUP", "OUT_DATE": "8-5-2026", "OUT_PCS": "960", "REWASH": "32 ✗", "Rewash In": "", "R-In Date": "", "Rewash Out": "", "R-Out Date": "", "MONTH": "May", "Pending": "0", "HD WISHKAR": "960", "PD WISHKAR": "", "PAPER": "", "spray": "", "tacking": "960", "highlight": "", "BACK WISHKAR": "960", "DAMAGE": "", "HEAVY DAMAGE": "", "": "Towal" }];
+    const SAMPLE_CHEM = [{ "Lot No.": "4157", "PCS": "155", "Type": "Tint", "4BB": "", "BIO CRUDE": "", "BLACK BR-240": "", "BLACK E": "63 g", "BLUE BRN": "56 g", "BLUE BRN (AAA)": "", "BLUE BRN CRUDE": "51 g", "BLUE GLL": "10 g", "BORDEAUX": "", "BOTTLE GREEN 1556": "", "BRAKET": "", "BRIGHTEX": "", "BROWN CR": "60 g", "CASTICK": "", "CAUSTIC FLAKES": "", "CELLUNASE 5300": "", "CV": "", "DANA": "", "DYE FIXER": "", "FULL BRIGHT": "", "GREEN HE4BD": "", "GREY 905": "", "HARDNER": "8 g", "HEPO": "", "HI": "21 g", "HYDROGEN": "", "MAXCLEAN": "", "MUSTURED OIL": "97 g", "OT PASTE": "33 g", "OXALIC ACID": "", "PINKI": "", "POLY BOUNCE": "", "REZING": "", "RESIMIX 555": "", "RODOSOFT -525 SILICONE": "59 g", "Salt": "", "S BLACK A-1": "", "SOAPNER RAW": "", "SOAPNER TUBE": "", "SODA": "", "SODIUM": "", "SULPHUR BLACK A-1": "33 g", "SURF": "", "ULTRA FULL DC CONE": "", "ULTRA SIZE": "", "VINEGER": "30 g", "YELLOW GLL": "", "Grand Total": "47 g" }, { "Lot No.": "4157", "PCS": "544", "Type": "Hard Wash", "4BB": "", "BIO CRUDE": "", "BLACK BR-240": "13 g", "BLACK E": "", "BLUE BRN": "8 g", "BLUE BRN (AAA)": "", "BLUE BRN CRUDE": "30 g", "BLUE GLL": "", "BORDEAUX": "29 g", "BOTTLE GREEN 1556": "", "BRAKET": "", "BRIGHTEX": "", "BROWN CR": "35 g", "CASTICK": "", "CAUSTIC FLAKES": "", "CELLUNASE 5300": "", "CV": "", "DANA": "", "DYE FIXER": "", "FULL BRIGHT": "35 g", "GREEN HE4BD": "", "GREY 905": "29 g", "HARDNER": "12 g", "HEPO": "", "HI": "51 g", "HYDROGEN": "39 Ltr", "MAXCLEAN": "71 g", "MUSTURED OIL": "", "OT PASTE": "", "OXALIC ACID": "24 g", "PINKI": "", "POLY BOUNCE": "", "REZING": "", "RESIMIX 555": "", "RODOSOFT -525 SILICONE": "", "Salt": "", "S BLACK A-1": "40 g", "SOAPNER RAW": "", "SOAPNER TUBE": "", "SODA": "5 g", "SODIUM": "25 g", "SULPHUR BLACK A-1": "", "SURF": "15 g", "ULTRA FULL DC CONE": "", "ULTRA SIZE": "", "VINEGER": "", "YELLOW GLL": "", "Grand Total": "" }, { "Lot No.": "4134", "PCS": "384", "Type": "Blast", "4BB": "", "BIO CRUDE": "", "BLACK BR-240": "", "BLACK E": "", "BLUE BRN": "", "BLUE BRN (AAA)": "", "BLUE BRN CRUDE": "82 g", "BLUE GLL": "69 g", "BORDEAUX": "", "BOTTLE GREEN 1556": "93 g", "BRAKET": "", "BRIGHTEX": "", "BROWN CR": "", "CASTICK": "30 g", "CAUSTIC FLAKES": "", "CELLUNASE 5300": "31 g", "CV": "", "DANA": "37 g", "DYE FIXER": "60 g", "FULL BRIGHT": "88 g", "GREEN HE4BD": "", "GREY 905": "92 g", "HARDNER": "", "HEPO": "63 ml", "HI": "64 g", "HYDROGEN": "99 Ltr", "MAXCLEAN": "", "MUSTURED OIL": "54 g", "OT PASTE": "", "OXALIC ACID": "86 g", "PINKI": "", "POLY BOUNCE": "", "REZING": "", "RESIMIX 555": "", "RODOSOFT -525 SILICONE": "", "Salt": "65 g", "S BLACK A-1": "79 g", "SOAPNER RAW": "", "SOAPNER TUBE": "56 g", "SODA": "", "SODIUM": "", "SULPHUR BLACK A-1": "", "SURF": "", "ULTRA FULL DC CONE": "", "ULTRA SIZE": "", "VINEGER": "", "YELLOW GLL": "", "Grand Total": "" }, { "Lot No.": "4121", "PCS": "1031", "Type": "Towal", "4BB": "", "BIO CRUDE": "37 g", "BLACK BR-240": "", "BLACK E": "", "BLUE BRN": "", "BLUE BRN (AAA)": "", "BLUE BRN CRUDE": "90 g", "BLUE GLL": "23 g", "BORDEAUX": "", "BOTTLE GREEN 1556": "", "BRAKET": "", "BRIGHTEX": "", "BROWN CR": "", "CASTICK": "21 g", "CAUSTIC FLAKES": "79 g", "CELLUNASE 5300": "", "CV": "26 g", "DANA": "", "DYE FIXER": "", "FULL BRIGHT": "", "GREEN HE4BD": "", "GREY 905": "", "HARDNER": "", "HEPO": "", "HI": "", "HYDROGEN": "62 Ltr", "MAXCLEAN": "", "MUSTURED OIL": "", "OT PASTE": "", "OXALIC ACID": "", "PINKI": "", "POLY BOUNCE": "2 g", "REZING": "72 g", "RESIMIX 555": "13 g", "RODOSOFT -525 SILICONE": "64 g", "Salt": "12 g", "S BLACK A-1": "", "SOAPNER RAW": "", "SOAPNER TUBE": "", "SODA": "", "SODIUM": "", "SULPHUR BLACK A-1": "51 g", "SURF": "", "ULTRA FULL DC CONE": "", "ULTRA SIZE": "", "VINEGER": "", "YELLOW GLL": "", "Grand Total": "" }, { "Lot No.": "4154", "PCS": "228", "Type": "Blast", "4BB": "51 g", "BIO CRUDE": "", "BLACK BR-240": "", "BLACK E": "", "BLUE BRN": "", "BLUE BRN (AAA)": "", "BLUE BRN CRUDE": "", "BLUE GLL": "", "BORDEAUX": "12 g", "BOTTLE GREEN 1556": "", "BRAKET": "73 g", "BRIGHTEX": "", "BROWN CR": "", "CASTICK": "", "CAUSTIC FLAKES": "15 g", "CELLUNASE 5300": "", "CV": "", "DANA": "", "DYE FIXER": "49 g", "FULL BRIGHT": "", "GREEN HE4BD": "", "GREY 905": "21 g", "HARDNER": "100 g", "HEPO": "88 ml", "HI": "", "HYDROGEN": "", "MAXCLEAN": "", "MUSTURED OIL": "", "OT PASTE": "", "OXALIC ACID": "", "PINKI": "", "POLY BOUNCE": "", "REZING": "", "RESIMIX 555": "", "RODOSOFT -525 SILICONE": "1 g", "Salt": "", "S BLACK A-1": "", "SOAPNER RAW": "", "SOAPNER TUBE": "", "SODA": "", "SODIUM": "", "SULPHUR BLACK A-1": "", "SURF": "", "ULTRA FULL DC CONE": "", "ULTRA SIZE": "", "VINEGER": "82 g", "YELLOW GLL": "17 g", "Grand Total": "" }, { "Lot No.": "4155", "PCS": "443", "Type": "Towal", "4BB": "", "BIO CRUDE": "37 g", "BLACK BR-240": "", "BLACK E": "", "BLUE BRN": "", "BLUE BRN (AAA)": "", "BLUE BRN CRUDE": "90 g", "BLUE GLL": "23 g", "BORDEAUX": "", "BOTTLE GREEN 1556": "", "BRAKET": "", "BRIGHTEX": "", "BROWN CR": "", "CASTICK": "21 g", "CAUSTIC FLAKES": "79 g", "CELLUNASE 5300": "", "CV": "26 g", "DANA": "", "DYE FIXER": "", "FULL BRIGHT": "", "GREEN HE4BD": "", "GREY 905": "", "HARDNER": "", "HEPO": "", "HI": "", "HYDROGEN": "62 Ltr", "MAXCLEAN": "", "MUSTURED OIL": "", "OT PASTE": "", "OXALIC ACID": "", "PINKI": "", "POLY BOUNCE": "2 g", "REZING": "72 g", "RESIMIX 555": "13 g", "RODOSOFT -525 SILICONE": "64 g", "Salt": "12 g", "S BLACK A-1": "", "SOAPNER RAW": "", "SOAPNER TUBE": "", "SODA": "", "SODIUM": "", "SULPHUR BLACK A-1": "51 g", "SURF": "", "ULTRA FULL DC CONE": "", "ULTRA SIZE": "", "VINEGER": "", "YELLOW GLL": "", "Grand Total": "" }];
+
+    const PAL = { blue: '#2563eb', teal: '#0891b2', green: '#059669', amber: '#d97706', violet: '#7c3aed', rose: '#e11d48' };
+    const FONT = { family: 'Poppins, sans-serif', color: '#475569', size: 12 };
+    const GRID = '#e2e8f0';
+    const CONFIG = { displayModeBar: false, responsive: true };
+    const HL = { bgcolor: '#1e293b', font: { family: 'Poppins, sans-serif', color: '#fff' }, bordercolor: '#475569' };
+    const MONTH_ORDER = { January: 1, February: 2, March: 3, April: 4, May: 5, June: 6, July: 7, August: 8, September: 9, October: 10, November: 11, December: 12 };
+    const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    // Month a lot belongs to: prefer the real IN_DATE; fall back to MONTH text only when there is no date.
+    // Includes the year so Dec 2025 sorts before Mar 2026.
+    function monthOf(d, monthText, fallbackDate) {
+      if (d) return MONTH_NAMES[d.getMonth()] + ' ' + d.getFullYear();
+      const mt = (monthText || '').trim();
+      if (!mt) return '';
+      if (fallbackDate) return mt + ' ' + fallbackDate.getFullYear();
+      return mt;
+    }
+    // Chronological sort key: "June 2026" → 202606, "December 2025" → 202512
+    function monthSortKey(label) {
+      const parts = label.split(' ');
+      const year = parseInt(parts[parts.length - 1]) || 9999;
+      const monthName = parts.slice(0, -1).join(' ');
+      return year * 100 + (MONTH_ORDER[monthName] || 99);
+    }
+
+    const state = {
+      register: null, chem: null,
+      filters: { month: '', wash: '', party: '', lot: '', from: '', to: '', proc: '' },
+      flowView: 'all',   // chart-local month picker
+      pendSearch: '',    // pending-table search
+      tableFilter: 'all' // 'all' or 'pending'
+    };
+
+    /* ============================================================
+       LIVE API CONFIG  —  EDIT THESE TWO URLS
+       ------------------------------------------------------------
+       register : IN/OUT lot register endpoint (already wired)
+       chem     : chemical-usage sheet endpoint  <-- PASTE 2nd URL
+       Tip: the /exec form (script.google.com/macros/s/<ID>/exec) is
+       more stable than the echo URL, which can expire per deploy.
+       ============================================================ */
+    const API = {
+      // Register (IN/OUT lot data) — this deploy includes the "Process" (wash-type) column.
+      register: 'https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnTEuWx8QQ-Y8PQ19YraB9pcGUoHberjrelytt4f8GO5C7PmdZu3ol6QffJGSvEt3ypSktdDzDIijkRm71-NE5L6To0rHHlx4LUUhTy614p-I82A15dGMeBzGtHrp6jV4oY4LfmEsb4mmWMtKUJriTZJDhb1uW080D0CSNYoiQcEM8dfys9CLlxgamstvBhaYJsEBici7Iwn-IDtqXMW5glJUtf9PT299xcpDKE7M92JvwQKdoRs1M108Pp3svmVfsGvYzLibPwFTFASWIVsEHxPG7otkg&lib=MyXUXAY_ykK5gkoCS7YHaU6im3LrgviIW',
+      // Chemical-usage sheet ("Lot No.", "PCS", "Type", + chemical-name columns).
+      chem: 'https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnTucmiV7sdOjUXFghZcGKY4WlcCcgohmdkAlVUwBt9s_FRJReb1v1jP5w_FPNNsSlJbkH9GG4etSxDVbNiG3lVhdw1NtvpJ1lmO7JGAOd60lU2hcD7YzVxyG160n2w0j_UKcos96UV4srRiRlZHLhtp9mZpRNvuNHGyJ0iT2hwM1SxECrDGiJygL2fQGbMX9YURZPgTu0G9fVwhotDzftnYD9aHeiQcyAxVDN7ykCfOOaga_Dgwl3pULgiCZ9xsci4YCsTGrl_-_JVUP7pre_79gEwLqg&lib=MMiyvb2ofX7xjViTU3ghjy1N9GsRUch3M'
+    };
+    // (previous register /exec URL — pre-"Process"-column deploy, kept as a fallback:)
+    // 'https://script.google.com/macros/s/AKfycby_16GA1nN2ULKsS9Q-HgOEF0dSL_sxo8zdfiVv3y0w49Vt-ZDp-U4DhMB-Mo7pYMCAdA/exec'
+    // (alt register / echo URL, if the /exec one ever stops responding:)
+    // 'https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnS88l1BVim3KcLAwSCIWDaOIhUv4dkkccqmURtGhLNg4aLzmiTO85Bjq6AwRe39BtchSZpwCq6EJLENkmUvrpb4MCl4extMITBYoNZBpFMpEFcQELfjpen2rUwHBRGdWVkNbgp2ZtF6EPk8UCJBAEqaPHB054B8AIOOkKp5TlVo2njF488GJR2sRtgbtS_Se0kJVne9lAxsH48BcMO0nrmycDN1k9loJzo32I7xw2nwCTr2JRoalML-9g-6j_VaDuJS5KKZrK1ogjtYlTof8dg4naTfLQ&lib=MyXUXAY_ykK5gkoCS7YHaU6im3LrgviIW'
+    const AUTO_REFRESH_MS = 0; // e.g. 300000 for auto-refresh every 5 min; 0 = off
+    let autoTimer = null;
+
+    /* ---------- helpers ---------- */
+    function num(v) { if (v == null) return null; const s = String(v).replace(/[^0-9.\-]/g, ''); if (s === '' || s === '-') return null; const n = parseFloat(s); return isNaN(n) ? null : n; }
+    function chemAmt(v) {
+      if (v == null) return null; const s = String(v).trim(); if (!s) return null;
+      const m = s.match(/([\d.]+)\s*([a-zA-Z]*)/); if (!m) return null; const val = parseFloat(m[1]); if (isNaN(val)) return null;
+      let u = (m[2] || 'g').toLowerCase(); if (u.startsWith('l')) u = 'Ltr'; else if (u === 'ml') u = 'ml'; else u = 'g'; return { val, unit: u };
+    }
+    function fmt(n) { return (n == null ? 0 : Math.round(n)).toLocaleString('en-IN'); }
+    function fmtDate(d) { if (!d) return '—'; return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); }
+    function fmtChem(val, unit) {
+      if (unit && unit.toLowerCase() === 'g' && val >= 1000) {
+        return parseFloat((val / 1000).toFixed(2)) + ' kg';
+      }
+      return val + ' ' + (unit || '');
+    }
+    function lerp(a, b, t) { return Math.round(a + (b - a) * t); }
+    function hex2rgb(h) { h = h.replace('#', ''); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
+    function gradient(h1, h2, n) { const a = hex2rgb(h1), b = hex2rgb(h2), out = []; for (let i = 0; i < n; i++) { const t = n <= 1 ? 0 : i / (n - 1); out.push(`rgb(${lerp(a[0], b[0], t)},${lerp(a[1], b[1], t)},${lerp(a[2], b[2], t)})`); } return out; }
+    function normWash(w) {
+      const s = (w || '').toUpperCase();
+      if (s.includes('BLAST')) return 'Blast';
+      if (s.includes('HARD') || s.includes('HDW') || s.includes('HD WISH')) return 'Hard Wash';
+      if (s.includes('TOW')) return 'Towal';
+      if (s.includes('TINT')) return 'Tint';
+      if (s.includes('POLISH') || s.includes('POLICE')) return 'By Polish';
+      if (!s.trim()) return 'Other';
+      return 'Other';
+    }
+    const WASH_COLORS = { 'Blast': PAL.blue, 'Hard Wash': PAL.teal, 'Towal': PAL.green, 'Tint': PAL.amber, 'By Polish': PAL.violet, 'Other': PAL.rose };
+    const PARTY_COLORS = [PAL.blue, PAL.teal, PAL.green, PAL.amber, PAL.violet, PAL.rose];
+    const PENDING_MIN = 10;
+    // Finishing processes recorded per lot (raw column key -> display label)
+    const PROC_COLS = {
+      'HD WISHKAR': 'HD Wishkar', 'PD WISHKAR': 'PD Wishkar', 'PAPER': 'Paper',
+      'spray': 'Spray', 'tacking': 'Tacking', 'highlight': 'Highlight',
+      'BACK WISHKAR': 'Back Wishkar', 'DAMAGE': 'Damage', 'HEAVY DAMAGE': 'Heavy Damage'
+    };
+
+    /* date parsing: "20-5-2026" or "20-05-2026" or "2026-05-20" or ISO "2026-05-20T00:00:00.000Z" (from API) */
+    function parseDate(s) {
+      if (!s) return null;
+      s = String(s).trim();
+      // ISO datetime from the live API — read the date part as a LOCAL date so the
+      // UTC-midnight "Z" doesn't shift the day backwards in IST.
+      let iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})T/);
+      if (iso) { const d = new Date(+iso[1], +iso[2] - 1, +iso[3]); return isNaN(d) ? null : d; }
+      let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if (m) { const d = new Date(+m[1], +m[2] - 1, +m[3]); return isNaN(d) ? null : d; }
+      m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+      if (m) { const d = new Date(+m[3], +m[2] - 1, +m[1]); return isNaN(d) ? null : d; }
+      return null;
+    }
+    function isoDay(d) { if (!d) return ''; const m = String(d.getMonth() + 1).padStart(2, '0'); const dd = String(d.getDate()).padStart(2, '0'); return d.getFullYear() + '-' + m + '-' + dd; }
+    function weekStart(d) { if (!d) return null; const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); const dow = x.getDay() || 7; x.setDate(x.getDate() - dow + 1); return x; }
+    function weekLabel(d) { if (!d) return ''; return 'Week of ' + d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }); }
+
+    /* ---------- schema detect + ingest ---------- */
+    function detect(rows) {
+      if (!rows || !rows.length) return 'unknown'; const k = Object.keys(rows[0]);
+      if (k.includes('PARTY NAME') && (k.includes('IN_PCS') || k.includes('OUT_PCS'))) return 'register';
+      if (k.includes('Lot No.') && k.includes('Type')) return 'chemical'; return 'unknown';
+    }
+
+    // REWASH cell looks like "35 ✗" / "7 ✓" / "0 ✗". Number = days since dispatch,
+    // ✓ = rewash accepted, ✗ = not accepted. Policy: accept window is ≤ 10 days.
+    function parseRewash(v) {
+      if (v == null) return null;
+      const s = String(v).trim();
+      if (!s || s === '#REF!') return null;
+      const m = s.match(/-?\d+/);
+      const days = m ? parseInt(m[0], 10) : null;
+      const ok = s.includes('✓') ? true : (s.includes('✗') ? false : null);
+      if (days == null && ok == null) return null;
+      return { raw: s, days, ok };
+    }
+
+    function ingestRegister(rows) {
+      return rows.map(r => {
+        const inP = num(r['IN_PCS']), outP = num(r['OUT_PCS']);
+        const real = inP != null && inP > 1;
+        const pend = real ? Math.max(inP - (outP || 0), 0) : 0;
+        const inDate = parseDate(r['IN_DATE']);
+        const outDate = parseDate(r['OUT_DATE']);
+        const wk = weekStart(inDate);
+        // pieces recorded against each finishing process for this lot
+        const proc = {};
+        for (const col in PROC_COLS) { const q = num(r[col]); if (q != null && q > 0) proc[col] = q; }
+        return {
+          sno: r['S. NO.'], party: (r['PARTY NAME'] || '').trim() || '—', lot: String(r['LOT'] || '').trim(),
+          article: (r['ARTICLE'] || '').trim(), inP, outP, real, pend, isPending: pend >= PENDING_MIN,
+          // wash/process type: live API exposes it as the named "Process" column; the
+          // embedded sample keys the same last column as "" — fall back to ARTICLE only if both are empty.
+          month: monthOf(inDate, r['MONTH'], outDate), wash: normWash(r['Process'] || r[''] || r['ARTICLE']), proc,
+          rewash: parseRewash(r['REWASH']),
+          inDate, outDate, _isoIn: isoDay(inDate), _wk: wk ? isoDay(wk) : '', _wkLabel: weekLabel(wk)
+        };
+      });
+    }
+    function titleCase(str) {
+      if (!str) return '';
+      const normal = str.toLowerCase().trim();
+      const fixes = {
+        'vineger': 'Vinegar',
+        'mustured oil': 'Mustard Oil',
+        'castick': 'Caustic',
+        'soapner raw': 'Softener Raw',
+        'soapner tube': 'Softener Tube'
+      };
+      if (fixes[normal]) return fixes[normal];
+
+      return str.toLowerCase().split(' ').map(word => {
+        const upper = ['4bb', 'cv', 'hi', 'ot'];
+        if (upper.includes(word)) return word.toUpperCase();
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      }).join(' ');
+    }
+
+    function ingestChem(rows) {
+      const skip = ['Lot No.', 'PCS', 'Type', 'Grand Total'];
+      const aggregated = {};    // keyed by lot
+
+      rows.forEach(r => {
+        const lot = String(r['Lot No.'] || '').trim();
+        if (!lot) return;
+
+        // Parse chemicals in this row
+        const rowChems = [];
+        for (const k in r) {
+          if (skip.includes(k)) continue;
+          const a = chemAmt(r[k]);
+          if (a) rowChems.push({ name: titleCase(k), ...a });
+        }
+
+        // skip rows with no chemicals recorded (empty placeholder lots)
+        if (!rowChems.length) return;
+
+        const pcs = num(r['PCS']) || 0;
+        const type = (r['Type'] || '').trim();
+
+        if (!aggregated[lot]) {
+          aggregated[lot] = {
+            lot: lot,
+            pcs: pcs,
+            types: new Set(type ? [type] : []),
+            chemMap: {}
+          };
+        } else {
+          aggregated[lot].pcs += pcs;
+          if (type) aggregated[lot].types.add(type);
+        }
+
+        // Merge chemicals into chemMap
+        rowChems.forEach(ch => {
+          if (!aggregated[lot].chemMap[ch.name]) {
+            aggregated[lot].chemMap[ch.name] = { val: ch.val, unit: ch.unit };
+          } else {
+            aggregated[lot].chemMap[ch.name].val += ch.val;
+          }
+        });
+      });
+
+      // Convert aggregated object back to the expected array format
+      const out = [];
+      for (const lotId in aggregated) {
+        const entry = aggregated[lotId];
+        const typeArray = [...entry.types];
+        const typeStr = typeArray.length ? typeArray.join(' & ') : '—';
+
+        // Convert chemMap back to array format
+        const chems = [];
+        for (const name in entry.chemMap) {
+          chems.push({
+            name: name,
+            val: entry.chemMap[name].val,
+            unit: entry.chemMap[name].unit
+          });
+        }
+
+        // Sort chemicals by quantity descending
+        chems.sort((a, b) => b.val - a.val);
+
+        out.push({
+          lot: entry.lot,
+          pcs: entry.pcs,
+          type: typeStr,
+          chems: chems
+        });
+      }
+
+      return out;
+    }
+
+    /* ---------- filters ---------- */
+    function getFiltered() {
+      if (!state.register) return [];
+      const f = state.filters;
+      return state.register.filter(r => {
+        if (f.month && r.month !== f.month) return false;
+        if (f.wash && r.wash !== f.wash) return false;
+        if (f.party && r.party !== f.party) return false;
+        if (f.lot && r.lot !== f.lot) return false;
+        if (f.proc && !(r.proc && r.proc[f.proc])) return false;
+        if (f.from && (!r._isoIn || r._isoIn < f.from)) return false;
+        if (f.to && (!r._isoIn || r._isoIn > f.to)) return false;
+        return true;
+      });
+    }
+    function filteredLots() {
+      // chemical lots filtered by which lots remain in filtered register
+      if (!state.chem) return [];
+      // if no register loaded, just return all chem
+      if (!state.register) return state.chem;
+      const keepLots = new Set(getFiltered().map(r => r.lot));
+      // any filter active?
+      const f = state.filters;
+      const anyActive = f.month || f.wash || f.party || f.lot || f.from || f.to || f.proc;
+      if (!anyActive) return state.chem;
+      return state.chem.filter(c => keepLots.has(c.lot));
+    }
+
+    function buildFilterOptions() {
+      const reg = state.register || [];
+      const months = [...new Set(reg.filter(r => r.month).map(r => r.month))].sort((a, b) => monthSortKey(a) - monthSortKey(b));
+      const washes = [...new Set(reg.filter(r => r.real).map(r => r.wash))].sort();
+      const parties = [...new Set(reg.filter(r => r.real).map(r => r.party))].sort();
+      const lots = [...new Set(reg.filter(r => r.real && r.lot).map(r => r.lot))].sort((a, b) => {
+        const na = parseFloat(a), nb = parseFloat(b);
+        if (!isNaN(na) && !isNaN(nb)) return na - nb;
+        return a.localeCompare(b);
+      });
+      const opt = (v, label) => `<option value="${v}">${label}</option>`;
+      document.getElementById('fMonth').innerHTML = opt('', 'All Months') + months.map(m => opt(m, m)).join('');
+      document.getElementById('fWash').innerHTML = opt('', 'All Washes') + washes.map(w => opt(w, w)).join('');
+      document.getElementById('fParty').innerHTML = opt('', 'All Parties') + parties.map(p => opt(p, p)).join('');
+      state._lotSet = new Set(lots);
+      // value-only options render as a single clean line; a differing text label makes
+      // Chrome stack "value" over "label" (the two-line rows we want to avoid).
+      document.getElementById('lotList').innerHTML = lots.map(l => `<option value="${l}"></option>`).join('');
+      document.getElementById('flowView').innerHTML = opt('all', 'All months') + months.map(m => opt(m, m)).join('');
+      // date min/max
+      const dates = reg.map(r => r._isoIn).filter(Boolean).sort();
+      if (dates.length) {
+        document.getElementById('fFrom').min = dates[0];
+        document.getElementById('fFrom').max = dates[dates.length - 1];
+        document.getElementById('fTo').min = dates[0];
+        document.getElementById('fTo').max = dates[dates.length - 1];
+      }
+    }
+
+    /* ---------- render ---------- */
+    const mergeAxis = (def, ext) => {
+      if (!ext) return def;
+      const res = Object.assign({}, def, ext);
+      if (def.tickfont && ext.tickfont) {
+        res.tickfont = Object.assign({}, def.tickfont, ext.tickfont);
+      }
+      return res;
+    };
+
+    const baseLayout = (extra = {}) => {
+      const merged = {
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: FONT,
+        margin: Object.assign({ l: 50, r: 18, t: 14, b: 40 }, extra.margin || {}),
+        hoverlabel: Object.assign({ font: { family: 'Poppins, sans-serif', color: '#fff' }, bgcolor: '#1e293b', bordercolor: '#475569' }, extra.hoverlabel || {}),
+        xaxis: mergeAxis({ gridcolor: GRID, zerolinecolor: GRID, linecolor: GRID, tickfont: FONT, layer: 'below traces' }, extra.xaxis),
+        yaxis: mergeAxis({ gridcolor: GRID, zerolinecolor: GRID, linecolor: GRID, tickfont: FONT, layer: 'below traces' }, extra.yaxis),
+        uniformtext: { mode: 'show', minsize: 9 }
+      };
+      for (const k in extra) {
+        if (!['margin', 'hoverlabel', 'xaxis', 'yaxis'].includes(k)) {
+          merged[k] = extra[k];
+        }
+      }
+      return merged;
+    };
+
+    function partyAgg(reg) {
+      const m = {}; reg.forEach(r => {
+        if (!r.real) return; m[r.party] = m[r.party] || { in: 0, out: 0, pend: 0, plots: 0, lots: 0 };
+        m[r.party].in += r.inP; if (r.outP) m[r.party].out += r.outP; m[r.party].pend += r.pend; m[r.party].lots++; if (r.isPending) m[r.party].plots++;
+      }); return m;
+    }
+
+    function renderKPIs(reg) {
+      let tin = 0, tout = 0, lotsReceived = 0;
+      const pendingLotSet = new Set();
+      reg.forEach(r => {
+        if (!r.real) return;
+        tin += r.inP;
+        if (r.outP) tout += r.outP;
+        if (r.pend >= PENDING_MIN) pendingLotSet.add(r.lot);
+        lotsReceived++;
+      });
+      const tpend = Math.max(tin - tout, 0);
+      const plots = pendingLotSet.size;
+      const disp = tin ? Math.round(tout / tin * 100) : 0;
+      const cards = [
+        {
+          t: 'blue', label: 'Total Pieces IN', val: fmt(tin), meta: `across <b>${lotsReceived}</b> lots received`,
+          ic: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>'
+        },
+        {
+          t: 'teal', label: 'Total Pieces OUT', val: fmt(tout), meta: `<b>${disp}%</b> dispatched`,
+          ic: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>'
+        },
+        {
+          t: 'amber', label: 'Processing (In Factory)', val: fmt(tpend), meta: `still to dispatch`,
+          ic: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'
+        },
+        {
+          t: 'rose', label: 'Lots In Factory', val: fmt(plots), meta: `need follow-up`,
+          ic: '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'
+        },
+      ];
+      document.getElementById('kpiRow').innerHTML = cards.map((c, i) => {
+        const clickable = 'clickable-kpi';
+        return `
+    <div class="card kpi t-${c.t} ${clickable} fade-up" data-type="${c.t}" style="animation-delay:${i * .06}s">
+      <div class="kpi-top"><span class="kpi-label">${c.label}</span>
+        <span class="kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${c.ic}</svg></span></div>
+      <div class="kpi-val">${c.val}</div><div class="kpi-meta">${c.meta}</div>
+    </div>`;
+      }).join('');
+
+      // Programmatically attach click listeners (100% CSP safe)
+      document.querySelectorAll('#kpiRow .card.kpi').forEach(el => {
+        el.addEventListener('click', () => {
+          const type = el.getAttribute('data-type');
+          const view = (type === 'amber' || type === 'rose') ? 'pending' : 'all';
+          filterTableAndScroll(view);
+        });
+      });
+    }
+
+    function renderFlow(reg) {
+      const localMonth = state.flowView;
+      let realRows;
+      if (localMonth && localMonth !== 'all') {
+        // flowView is the month selector for this chart — ignore the global month filter
+        // but respect all other active filters (wash, party, week, date range)
+        const f = state.filters;
+        realRows = (state.register || []).filter(r => {
+          if (!r.real) return false;
+          if (f.wash && r.wash !== f.wash) return false;
+          if (f.party && r.party !== f.party) return false;
+          if (f.lot && r.lot !== f.lot) return false;
+          if (f.from && (!r._isoIn || r._isoIn < f.from)) return false;
+          if (f.to && (!r._isoIn || r._isoIn > f.to)) return false;
+          return true;
+        });
+      } else {
+        realRows = reg.filter(r => r.real);
+      }
+      let workingRows = realRows;
+      let buckets, ins, outs, mode, tickAngle = 0;
+
+      if (localMonth && localMonth !== 'all') {
+        workingRows = realRows.filter(r => r.month === localMonth);
+        // drill into the month — bucket by day
+        const days = [...new Set(workingRows.map(r => r._isoIn).filter(Boolean))].sort();
+        buckets = days.map(d => {
+          const dt = new Date(d); return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+        });
+        ins = days.map(d => workingRows.filter(r => r._isoIn === d).reduce((s, r) => s + r.inP, 0));
+        outs = days.map(d => workingRows.filter(r => r._isoIn === d).reduce((s, r) => s + (r.outP || 0), 0));
+        mode = 'day'; tickAngle = -30;
+        document.getElementById('flowTitle').textContent = `${localMonth} — daily flow`;
+        document.getElementById('flowSub').textContent = `Day-by-day IN vs OUT for ${localMonth}`;
+      } else {
+        // auto: monthly if >=2 months, else weekly, else daily
+        const months = [...new Set(realRows.filter(r => r.month).map(r => r.month))];
+        const weeks = [...new Set(realRows.filter(r => r._wk).map(r => r._wk))];
+        if (months.length >= 2) {
+          buckets = months.sort((a, b) => monthSortKey(a) - monthSortKey(b));
+          ins = buckets.map(m => realRows.filter(r => r.month === m).reduce((s, r) => s + r.inP, 0));
+          outs = buckets.map(m => realRows.filter(r => r.month === m).reduce((s, r) => s + (r.outP || 0), 0));
+          mode = 'month';
+          document.getElementById('flowTitle').textContent = 'Monthly flow — IN vs OUT';
+          document.getElementById('flowSub').textContent = 'Pieces received vs dispatched, month on month';
+        } else if (weeks.length >= 2) {
+          buckets = weeks.sort();
+          const labelOf = {}; realRows.forEach(r => { if (r._wk) labelOf[r._wk] = r._wkLabel; });
+          ins = buckets.map(w => realRows.filter(r => r._wk === w).reduce((s, r) => s + r.inP, 0));
+          outs = buckets.map(w => realRows.filter(r => r._wk === w).reduce((s, r) => s + (r.outP || 0), 0));
+          buckets = buckets.map(w => labelOf[w] || w); mode = 'week'; tickAngle = -25;
+          document.getElementById('flowTitle').textContent = 'Weekly flow — IN vs OUT';
+          document.getElementById('flowSub').textContent = 'Pieces received vs dispatched, week on week';
+        } else {
+          const days = [...new Set(realRows.map(r => r._isoIn).filter(Boolean))].sort();
+          buckets = days.map(d => { const dt = new Date(d); return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }); });
+          ins = days.map(d => realRows.filter(r => r._isoIn === d).reduce((s, r) => s + r.inP, 0));
+          outs = days.map(d => realRows.filter(r => r._isoIn === d).reduce((s, r) => s + (r.outP || 0), 0));
+          mode = 'day'; tickAngle = -30;
+          document.getElementById('flowTitle').textContent = 'Daily flow — IN vs OUT';
+          document.getElementById('flowSub').textContent = 'Pieces received vs dispatched by date';
+        }
+      }
+
+      // summary strip (always based on workingRows)
+      const totIn = ins.reduce((s, v) => s + v, 0);
+      const totOut = outs.reduce((s, v) => s + v, 0);
+      const pend = workingRows.filter(r => r.isPending).reduce((s, r) => s + r.pend, 0);
+      const disp = totIn ? Math.round(totOut / totIn * 100) : 0;
+      document.getElementById('flowSummary').innerHTML = `
+    <div class="cs-cell"><span>Total IN</span><b>${fmt(totIn)} <small style="color:var(--soft);font-weight:500;font-size:12px">pcs</small></b></div>
+    <div class="cs-cell"><span>Total OUT</span><b>${fmt(totOut)} <small style="color:var(--soft);font-weight:500;font-size:12px">pcs</small></b></div>
+    <div class="cs-cell"><span>Dispatched</span><b class="hl">${disp}%</b></div>
+    <div class="cs-cell"><span>Pending</span><b class="${pend > 0 ? 'warn' : 'hl'}">${fmt(pend)} <small style="color:var(--soft);font-weight:500;font-size:12px">pcs</small></b></div>`;
+
+      if (!buckets.length) {
+        document.getElementById('flowChart').innerHTML = '<div class="empty">No records match the current filters.</div>'; return;
+      }
+
+      // labels only when ≤8 buckets (otherwise it crowds)
+      const showLabels = buckets.length <= 8;
+      const inLabels = showLabels ? ins.map(v => v ? fmt(v) : '') : [];
+      const outLabels = showLabels ? outs.map(v => v ? fmt(v) : '') : [];
+
+      const inTrace = {
+        x: buckets, y: ins, name: 'IN', type: 'scatter', mode: showLabels ? 'lines+markers+text' : 'lines+markers',
+        line: { shape: 'spline', color: PAL.blue, width: 3 }, marker: { size: 8, color: PAL.blue, line: { color: '#fff', width: 2 } },
+        fill: 'tozeroy', fillcolor: PAL.blue + '1f', text: inLabels, textposition: 'top center',
+        textfont: { family: 'Poppins', size: 11, color: PAL.blue },
+        hovertemplate: 'IN · %{x}<br><b>%{y:,} pcs</b><extra></extra>', hoverlabel: HL,
+        cliponaxis: false
+      };
+      const outTrace = {
+        x: buckets, y: outs, name: 'OUT', type: 'scatter', mode: showLabels ? 'lines+markers+text' : 'lines+markers',
+        line: { shape: 'spline', color: PAL.green, width: 3 }, marker: { size: 8, color: PAL.green, line: { color: '#fff', width: 2 } },
+        fill: 'tozeroy', fillcolor: PAL.green + '1f', text: outLabels, textposition: 'bottom center',
+        textfont: { family: 'Poppins', size: 11, color: PAL.green },
+        hovertemplate: 'OUT · %{x}<br><b>%{y:,} pcs</b><extra></extra>', hoverlabel: HL,
+        cliponaxis: false
+      };
+
+      const yMax = Math.max(...ins, ...outs) * 1.15 || 1;
+      const gd = document.getElementById('flowChart');
+      gd.innerHTML = '';
+      Plotly.newPlot(gd, [inTrace, outTrace],
+        baseLayout({
+          legend: { orientation: 'h', y: 1.14, x: 0, font: FONT }, margin: { l: 70, r: 45, t: 30, b: 50 },
+          xaxis: { gridcolor: GRID, tickfont: FONT, tickangle: tickAngle },
+          yaxis: { gridcolor: GRID, tickfont: FONT, range: [0, yMax] }
+        }), CONFIG);
+
+      gd.removeAllListeners('plotly_click');
+      gd.on('plotly_click', data => {
+        if (!data || !data.points || !data.points[0]) return;
+        const val = data.points[0].x;
+        const optM = [...document.getElementById('fMonth').options].find(o => o.value === val);
+        if (optM) {
+          state.filters.month = val;
+          document.getElementById('fMonth').value = val;
+          renderAll(); markStatus();
+          document.getElementById('pendingCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    }
+
+    function renderPartyDonut(reg) {
+      const a = partyAgg(reg); const labels = Object.keys(a).sort((x, y) => a[y].in - a[x].in); const vals = labels.map(l => a[l].in);
+      if (!labels.length) { document.getElementById('partyDonut').innerHTML = '<div class="empty">No records match the current filters.</div>'; return; }
+      const gd = document.getElementById('partyDonut');
+      gd.innerHTML = '';
+      Plotly.newPlot(gd, [{
+        labels, values: vals, type: 'pie', hole: 0.58,
+        marker: { colors: PARTY_COLORS, line: { color: '#fff', width: 2 } },
+        textinfo: 'label+percent', textposition: 'outside',
+        texttemplate: '%{label} - %{percent}',
+        outsidetextfont: { family: 'Poppins', size: 12, color: '#475569' },
+        hovertemplate: '%{label}<br>%{value:,} pcs (%{percent})<extra></extra>', hoverlabel: HL
+      }],
+        baseLayout({
+          margin: { l: 80, r: 80, t: 30, b: 30 }, showlegend: false,
+          annotations: [{
+            text: fmt(vals.reduce((s, v) => s + v, 0)) + '<br><span style="font-size:11px;color:#94a3b8">total pcs</span>',
+            showarrow: false, font: { family: 'Poppins', size: 18, color: '#0f172a' }
+          }]
+        }), CONFIG);
+
+      gd.removeAllListeners('plotly_click');
+      gd.on('plotly_click', data => {
+        if (!data || !data.points || !data.points[0]) return;
+        const party = data.points[0].label;
+        if (party) {
+          state.filters.party = party;
+          const el = document.getElementById('fParty');
+          if (el) el.value = party;
+          state.tableFilter = 'all';
+          const tf = document.getElementById('tableFilter');
+          if (tf) tf.value = 'all';
+          renderAll(); markStatus();
+          document.getElementById('pendingCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    }
+
+    function renderPending(reg) {
+      const a = partyAgg(reg); const parties = Object.keys(a).filter(p => a[p].pend > 0).sort((x, y) => a[x].pend - a[y].pend);
+      if (!parties.length) { document.getElementById('pendingChart').innerHTML = '<div class="empty">No pieces in factory — everything dispatched. 🎉</div>'; return; }
+      const vals = parties.map(p => a[p].pend); const cols = gradient(PAL.amber, PAL.rose, parties.length);
+      const txt = parties.map(p => `${a[p].plots} lot${a[p].plots !== 1 ? 's' : ''} · ${fmt(a[p].pend)} pcs`);
+      const gd = document.getElementById('pendingChart');
+      gd.innerHTML = '';
+      Plotly.newPlot(gd, [{
+        x: vals, y: parties, type: 'bar', orientation: 'h', marker: { color: cols },
+        text: txt, textposition: 'auto',
+        insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
+        outsidetextfont: { family: 'Poppins', size: 11, color: '#0f172a' },
+        insidetextanchor: 'middle',
+        hovertemplate: '%{y}<br>%{x:,} pcs in factory<extra></extra>', hoverlabel: HL,
+        cliponaxis: false
+      }],
+        baseLayout({
+          margin: { l: 120, r: 60, t: 10, b: 36 }, xaxis: { gridcolor: GRID, title: { text: 'pcs in factory', font: FONT }, tickfont: FONT },
+          yaxis: { automargin: true, tickfont: { family: 'Poppins', size: 12 }, ticksuffix: '  ' }
+        }), CONFIG);
+
+      gd.removeAllListeners('plotly_click');
+      gd.on('plotly_click', data => {
+        if (!data || !data.points || !data.points[0]) return;
+        const party = data.points[0].y;
+        if (party) {
+          state.filters.party = party;
+          const el = document.getElementById('fParty');
+          if (el) el.value = party;
+          state.tableFilter = 'pending';
+          const tf = document.getElementById('tableFilter');
+          if (tf) tf.value = 'pending';
+          renderAll(); markStatus();
+          document.getElementById('pendingCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    }
+
+    function renderMonthChart(reg) {
+      const f = state.filters;
+      const labelParts = [];
+      if (f.month) labelParts.push(f.month);
+      if (f.lot) labelParts.push('Lot ' + f.lot);
+      if (f.from || f.to) labelParts.push((f.from || '…') + ' → ' + (f.to || '…'));
+      const label = labelParts.length ? labelParts.join(' · ') : 'all data';
+      document.getElementById('monthTitle').textContent = `IN vs OUT by party · ${label}`;
+
+      const a = {}; reg.forEach(r => { if (!r.real) return; a[r.party] = a[r.party] || { in: 0, out: 0 }; a[r.party].in += r.inP; if (r.outP) a[r.party].out += r.outP; });
+      const parties = Object.keys(a).sort((x, y) => a[y].in - a[x].in);
+      if (!parties.length) { document.getElementById('monthChart').innerHTML = '<div class="empty">No records match the current filters.</div>'; return; }
+      const inVals = parties.map(p => a[p].in);
+      const outVals = parties.map(p => a[p].out);
+      const gd = document.getElementById('monthChart');
+      gd.innerHTML = '';
+      Plotly.newPlot(gd, [
+        {
+          x: parties, y: inVals, name: 'IN', type: 'bar', marker: { color: PAL.blue },
+          text: inVals.map(v => v ? fmt(v) : ''), textposition: 'auto',
+          insidetextfont: { family: 'Poppins', size: 10, color: '#ffffff' },
+          outsidetextfont: { family: 'Poppins', size: 10, color: '#0f172a' },
+          hovertemplate: '%{x}<br>IN %{y:,} pcs<extra></extra>', hoverlabel: HL, cliponaxis: false
+        },
+        {
+          x: parties, y: outVals, name: 'OUT', type: 'bar', marker: { color: PAL.teal },
+          text: outVals.map(v => v ? fmt(v) : ''), textposition: 'auto',
+          insidetextfont: { family: 'Poppins', size: 10, color: '#ffffff' },
+          outsidetextfont: { family: 'Poppins', size: 10, color: '#0f172a' },
+          hovertemplate: '%{x}<br>OUT %{y:,} pcs<extra></extra>', hoverlabel: HL, cliponaxis: false
+        }],
+        baseLayout({
+          barmode: 'group', legend: { orientation: 'h', y: 1.12, x: 0, font: FONT }, margin: { l: 55, r: 18, t: 36, b: 48 },
+          xaxis: { tickfont: FONT, gridcolor: GRID, tickangle: -12 }, yaxis: { gridcolor: GRID, tickfont: FONT }
+        }), CONFIG);
+
+      gd.removeAllListeners('plotly_click');
+      gd.on('plotly_click', data => {
+        if (!data || !data.points || !data.points[0]) return;
+        const party = data.points[0].x;
+        if (party) {
+          state.filters.party = party;
+          const el = document.getElementById('fParty');
+          if (el) el.value = party;
+          state.tableFilter = 'all';
+          const tf = document.getElementById('tableFilter');
+          if (tf) tf.value = 'all';
+          renderAll(); markStatus();
+          document.getElementById('pendingCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    }
+
+    function renderWashType(reg) {
+      // ----- left card: pieces per finishing process (the 9 numeric columns) -----
+      const proc = {}; const procLots = new Set();
+      reg.forEach(r => {
+        if (!r.real || !r.proc) return;
+        let any = false;
+        for (const col in r.proc) { proc[col] = proc[col] || { pcs: 0, lots: 0 }; proc[col].pcs += r.proc[col]; proc[col].lots++; any = true; }
+        if (any) procLots.add(r.lot);
+      });
+      const procItems = Object.keys(proc).map(k => ({ key: k, label: PROC_COLS[k] || k, pcs: proc[k].pcs, lots: proc[k].lots }));
+
+      // ----- right card: pieces per wash type (the Process column) -----
+      const wash = {}; const washLots = new Set();
+      reg.forEach(r => {
+        if (!r.real) return;
+        const w = r.wash || 'Other';
+        wash[w] = wash[w] || { pcs: 0, lots: 0 };
+        wash[w].pcs += r.inP; wash[w].lots++; washLots.add(r.lot);
+      });
+      const washItems = Object.keys(wash).map(w => ({ key: w, label: w, pcs: wash[w].pcs, lots: wash[w].lots, color: WASH_COLORS[w] || PAL.rose }));
+
+      // one shared height so the two cards line up side by side
+      const h = Math.max(280, Math.max(procItems.length, washItems.length) * 46 + 60);
+
+      drawHBar(document.getElementById('procChart'), document.getElementById('procSub'),
+        procItems, procLots.size, 'Most-used on top · pieces per process', h, false, 'proc');
+      drawHBar(document.getElementById('washChart'), document.getElementById('washSub'),
+        washItems, washLots.size, 'Most-used on top · pieces per wash type', h, true, 'wash');
+    }
+
+    // Rewash status — only shown when a single lot is selected via the Lot filter.
+    function renderRewash(reg) {
+      const card = document.getElementById('rewashCard');
+      const body = document.getElementById('rewashBody');
+      const sub = document.getElementById('rewashSub');
+      const lot = state.filters.lot;
+      if (!lot) { card.classList.add('hidden'); return; }   // appears only for a specific lot
+      card.classList.remove('hidden');
+
+      const entries = reg.filter(r => r.lot === lot && r.rewash);
+      if (!entries.length) {
+        sub.textContent = `Lot ${lot}`;
+        body.innerHTML = '<div class="empty">No rewash record for this lot.</div>';
+        return;
+      }
+      sub.textContent = `Lot ${lot} · ${entries.length} record${entries.length > 1 ? 's' : ''} · accept window ≤ 10 days`;
+
+      const rows = entries.map(r => {
+        const rw = r.rewash;
+        const ok = rw.ok === true;
+        const color = ok ? '#059669' : '#e11d48';
+        const bg = ok ? '#ecfdf5' : '#fef2f4';
+        const verdict = ok ? 'Rewash accepted' : 'Rewash not accepted';
+        const note = rw.days == null ? '' : (rw.days <= 10 ? 'within 10-day window' : 'older than 10 days');
+        return `<div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid #e2e8f0;border-radius:12px;background:${bg}">
+          <div style="min-width:62px;text-align:center;line-height:1.05">
+            <div style="font-size:24px;font-weight:700;color:${color}">${rw.days != null ? rw.days : '—'}</div>
+            <div style="font-size:11px;font-weight:500;color:#64748b">days</div>
+          </div>
+          <div style="flex:1">
+            <div style="font-weight:600;color:${color}">${verdict} ${ok ? '✓' : '✗'}</div>
+            <div style="font-size:12px;color:#64748b">${note}${rw.raw ? ` · sheet value: ${rw.raw}` : ''}</div>
+          </div>
+        </div>`;
+      }).join('');
+      body.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px">${rows}</div>`;
+    }
+
+    // Click a bar → set that filter and scroll down to the lot table (drill-in).
+    function drillByFilter(kind, value) {
+      if (!value) return;
+      state.filters[kind] = value;
+      if (kind === 'wash') { const el = document.getElementById('fWash'); if (el) el.value = value; }
+      state.tableFilter = 'all';
+      const tf = document.getElementById('tableFilter'); if (tf) tf.value = 'all';
+      renderAll(); markStatus();
+      const card = document.getElementById('pendingCard');
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Horizontal pieces-by-X bar. items: [{key,label,pcs,lots,color?}]. useItemColor uses item.color,
+    // else a blue→rose gradient. filterKind ('proc'|'wash') makes each bar clickable → drills into the table.
+    // Shows a "No data" state when items is empty (e.g. a lot filter that matches nothing).
+    function drawHBar(gd, subEl, items, totalLots, subBase, h, useItemColor, filterKind) {
+      gd.style.height = h + 'px';
+      gd.innerHTML = '';
+      if (!items.length) {
+        if (subEl) subEl.textContent = subBase;
+        gd.innerHTML = '<div class="empty">No data for the current filter.</div>';
+        return;
+      }
+      items.sort((a, b) => a.pcs - b.pcs); // ascending → largest lands at the top
+      if (subEl) subEl.textContent = `${subBase} · (Total Lots ${totalLots}) · click a bar to drill in`;
+
+      const labels = items.map(i => i.label);
+      const pcsVals = items.map(i => i.pcs);
+      const cols = useItemColor ? items.map(i => i.color) : gradient(PAL.blue, PAL.rose, items.length);
+      const txt = items.map(i => `${fmt(i.pcs)} pcs  (${i.lots} lot${i.lots !== 1 ? 's' : ''})`);
+
+      Plotly.newPlot(gd, [{
+        x: pcsVals, y: labels, type: 'bar', orientation: 'h', marker: { color: cols },
+        text: txt, textposition: 'auto',
+        insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
+        outsidetextfont: { family: 'Poppins', size: 11, color: '#0f172a' },
+        insidetextanchor: 'middle',
+        customdata: items.map(i => [i.label, fmt(i.pcs), i.lots, i.key]),
+        hovertemplate: '<b>%{customdata[0]}</b><br>%{customdata[1]} pcs · %{customdata[2]} lots<br><i>click to view lots</i><extra></extra>',
+        hoverlabel: HL, cliponaxis: false
+      }],
+        baseLayout({
+          height: h,
+          margin: { l: 120, r: 70, t: 16, b: 36 },
+          xaxis: { gridcolor: GRID, title: { text: 'pieces processed', font: FONT }, tickfont: FONT },
+          yaxis: { automargin: true, tickfont: { family: 'Poppins', size: 12, color: '#0f172a' }, ticksuffix: '  ' }
+        }), CONFIG);
+
+      // make bars clickable → drill into the lot table
+      gd.style.cursor = 'pointer';
+      gd.removeAllListeners && gd.removeAllListeners('plotly_click');
+      gd.on('plotly_click', d => {
+        const pt = d && d.points && d.points[0];
+        if (pt && pt.customdata) drillByFilter(filterKind, pt.customdata[3]);
+      });
+    }
+
+    function renderPendingTable(reg, chem) {
+      const chemLots = new Set((chem || []).map(c => c.lot));
+      const showOnlyPending = state.tableFilter === 'pending';
+      const all = reg.filter(r => r.real && (!showOnlyPending || r.isPending)).sort((a, b) => b.pend - a.pend);
+      const q = (state.pendSearch || '').trim().toLowerCase();
+      const rows = q ? all.filter(r => {
+        return (r.lot || '').toLowerCase().includes(q)
+          || (r.party || '').toLowerCase().includes(q)
+          || (r.article || '').toLowerCase().includes(q)
+          || (r.wash || '').toLowerCase().includes(q);
+      }) : all;
+      const counter = document.getElementById('pendCount');
+      if (counter) counter.textContent = q ? `${rows.length} of ${all.length}` : `${all.length} lot${all.length !== 1 ? 's' : ''}`;
+      if (!all.length) { document.getElementById('pendingTable').innerHTML = showOnlyPending ? '<div class="empty">No In-Factory lots in the current filter. ✓</div>' : '<div class="empty">No lots found in the current filter.</div>'; return; }
+      if (!rows.length) { document.getElementById('pendingTable').innerHTML = '<div class="empty">No lots match "' + q + '". Try a different keyword.</div>'; return; }
+      const washTag = { 'Blast': 'tag-blue', 'Hard Wash': 'tag-teal', 'Towal': 'tag-green', 'Tint': 'tag-amber', 'By Polish': 'tag-violet', 'Other': 'tag-slate' };
+      const body = rows.map(r => {
+        const hasChem = chemLots.has(r.lot);
+        const pendTag = r.pend >= 10 ? 'tag-rose' : (r.pend > 0 ? 'tag-amber' : 'tag-green');
+        return `<tr class="${hasChem ? 'clickable' : ''}" ${hasChem ? `data-lot="${r.lot}"` : ''}>
+      <td><b>${r.lot}</b></td><td>${r.party}</td><td>${r.article || '—'}</td>
+      <td><span class="tag ${washTag[r.wash] || 'tag-slate'}">${r.wash}</span></td>
+      <td>${fmt(r.inP)}</td><td>${fmtDate(r.inDate)}</td>
+      <td>${r.outP ? fmt(r.outP) : '<span class="chem-no">—</span>'}</td><td>${fmtDate(r.outDate)}</td>
+      <td><span class="tag ${pendTag}">${fmt(r.pend)}</span></td>
+      <td>${hasChem ? '<span class="chem-yes">view ↓</span>' : '<span class="chem-no">—</span>'}</td></tr>`;
+      }).join('');
+      document.getElementById('pendingTable').innerHTML = `<div class="tbl-wrap scroll"><table>
+    <thead><tr><th>Lot</th><th>Party</th><th>Article</th><th>Wash</th><th>IN</th><th>IN Date</th><th>OUT</th><th>OUT Date</th><th>In Factory</th><th>Chemicals</th></tr></thead>
+    <tbody>${body}</tbody></table></div>`;
+      document.querySelectorAll('#pendingTable tr.clickable').forEach(tr => tr.addEventListener('click', () => {
+        const lot = tr.getAttribute('data-lot'); const sel = document.getElementById('lotSel');
+        for (const o of sel.options) { if (o.dataset.lot === lot) { sel.value = o.value; renderDrill(+o.value); break; } }
+        document.getElementById('drillCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }));
+    }
+
+    function renderTopChem(chem) {
+      const agg = {}; chem.forEach(c => c.chems.forEach(ch => { const key = ch.name; agg[key] = agg[key] || { val: 0, unit: ch.unit }; agg[key].val += ch.val; }));
+      let names = Object.keys(agg).sort((a, b) => agg[b].val - agg[a].val).slice(0, 12);
+      if (!names.length) { document.getElementById('topChem').innerHTML = '<div class="empty">No chemicals match the current filter.</div>'; return; }
+      names = names.reverse();
+      const vals = names.map(n => agg[n].val); const cols = gradient(PAL.blue, PAL.teal, names.length);
+      const labels = names.map(n => n.length > 22 ? n.slice(0, 21) + '…' : n);
+      const txtLabels = names.map((n, i) => fmtChem(vals[i], agg[n].unit));
+      const gd = document.getElementById('topChem');
+      gd.innerHTML = '';
+      Plotly.newPlot(gd, [{
+        x: vals, y: labels, type: 'bar', orientation: 'h', marker: { color: cols },
+        text: txtLabels, textposition: 'auto',
+        insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
+        outsidetextfont: { family: 'Poppins', size: 11, color: '#0f172a' },
+        insidetextanchor: 'middle',
+        customdata: names.map(n => [fmtChem(agg[n].val, agg[n].unit), n]),
+        hovertemplate: '<b>%{customdata[1]}</b><br>%{customdata[0]}<extra></extra>', hoverlabel: HL,
+        cliponaxis: false
+      }],
+        baseLayout({
+          margin: { l: 150, r: 64, t: 10, b: 36 }, xaxis: { gridcolor: GRID, title: { text: 'quantity used', font: FONT }, tickfont: FONT },
+          yaxis: { automargin: true, tickfont: { family: 'Poppins', size: 11 }, ticksuffix: '  ' }
+        }), CONFIG);
+    }
+
+    function renderDrill(idx) {
+      const all = state.chem || []; const c = all[idx]; const body = document.getElementById('drillBody');
+      if (!c) { body.innerHTML = '<div class="empty">Select a lot.</div>'; return; }
+      let party = '—'; if (state.register) { const m = state.register.find(r => r.lot === c.lot && r.real); if (m) party = m.party; }
+      const meta = `<div class="drill-meta">
+    <div class="meta-chip"><span>Party</span><b>${party}</b></div>
+    <div class="meta-chip"><span>Wash type</span><b>${c.type || '—'}</b></div>
+    <div class="meta-chip"><span>Pieces</span><b>${fmt(c.pcs)}</b></div>
+    <div class="meta-chip"><span>Chemicals</span><b>${c.chems.length}</b></div></div>`;
+      if (!c.chems.length) { body.innerHTML = meta + '<div class="empty">No chemicals recorded for this lot.</div>'; return; }
+      body.innerHTML = meta + '<div id="drillChart" style="width:100%;height:300px"></div>';
+      const names = c.chems.map(x => x.name).reverse(); const vals = c.chems.map(x => x.val).reverse();
+      const units = c.chems.map(x => x.unit).reverse(); const cols = gradient(PAL.teal, PAL.blue, names.length);
+      Plotly.newPlot('drillChart', [{
+        x: vals, y: names.map(n => n.length > 22 ? n.slice(0, 21) + '…' : n), type: 'bar', orientation: 'h', marker: { color: cols },
+        customdata: vals.map((v, i) => fmtChem(v, units[i])), text: vals.map((v, i) => fmtChem(v, units[i])), textposition: 'auto',
+        insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
+        outsidetextfont: { family: 'Poppins', size: 11, color: '#0f172a' },
+        hovertemplate: '%{y}<br>%{customdata}<extra></extra>', hoverlabel: HL,
+        cliponaxis: false
+      }],
+        baseLayout({ margin: { l: 150, r: 50, t: 8, b: 34 }, xaxis: { gridcolor: GRID, tickfont: FONT }, yaxis: { automargin: true, tickfont: { family: 'Poppins', size: 11 }, ticksuffix: '  ' } }), CONFIG);
+    }
+
+    /* ---------- orchestration ---------- */
+    function renderAll() {
+      const reg = getFiltered();
+      const chem = filteredLots();
+
+      const parts = [];
+      if (state.register) parts.push(`${state.register.length} register rows`);
+      if (state.chem) parts.push(`${state.chem.length} chemical lots`);
+      const f = state.filters; const anyActive = f.month || f.wash || f.party || f.week || f.from || f.to || f.proc || f.lot;
+      if (anyActive) parts.push(`<b style="color:var(--blue)">${reg.length} showing</b>`);
+      document.getElementById('recCount').innerHTML = parts.join(' · ') || 'no data';
+
+      if (state.register) {
+        renderKPIs(reg); renderFlow(reg); renderPartyDonut(reg); renderPending(reg); renderMonthChart(reg); renderWashType(reg); renderRewash(reg);
+      }
+      renderPendingTable(reg, chem);
+
+      const lotSel = document.getElementById('lotSel');
+      if (chem && chem.length) {
+        const cur = lotSel.value;
+        lotSel.innerHTML = chem.map((c, i) => {
+          const fullIdx = state.chem.indexOf(c);
+          return `<option value="${fullIdx}" data-lot="${c.lot}">Lot ${c.lot} — ${c.type || '?'} (${fmt(c.pcs)} pcs)</option>`;
+        }).join('');
+        // try to preserve selection, else first
+        let nextIdx = Number(cur);
+        if (isNaN(nextIdx) || !chem.find(c => state.chem.indexOf(c) === nextIdx)) nextIdx = state.chem.indexOf(chem[0]);
+        lotSel.value = nextIdx;
+        renderTopChem(chem); renderDrill(nextIdx);
+      } else if (state.chem) {
+        lotSel.innerHTML = '<option>— no lots in filter —</option>';
+        document.getElementById('drillBody').innerHTML = '<div class="empty">No chemical-tracked lots match the filter.</div>';
+        document.getElementById('topChem').innerHTML = '<div class="empty">No chemicals match the current filter.</div>';
+      } else {
+        lotSel.innerHTML = '<option>—</option>';
+        document.getElementById('drillBody').innerHTML = '<div class="empty">Upload the chemical sheet to see per-lot usage.</div>';
+        document.getElementById('topChem').innerHTML = '<div class="empty">No chemical sheet uploaded.</div>';
+      }
+    }
+
+    function showDashboard() {
+      document.getElementById('bootScreen').classList.add('hidden');
+      document.getElementById('uploadScreen').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+      buildFilterOptions();
+
+      // default: show all months (no month filter)
+      // flowView chart-local picker still defaults to 'all'
+
+      // attach filter listeners (idempotent)
+      ['fMonth', 'fWash', 'fParty', 'fFrom', 'fTo'].forEach(id => {
+        const el = document.getElementById(id);
+        el.onchange = () => { const key = id.slice(1).toLowerCase(); state.filters[key] = el.value; renderAll(); markStatus(); };
+      });
+
+      // Lot filter is a searchable input (native datalist) — validate the typed value
+      // against known lots and only re-render on a complete/valid selection or when cleared.
+      const fLot = document.getElementById('fLot');
+      const applyLot = () => {
+        const v = fLot.value.trim();
+        state.filters.lot = (state._lotSet && state._lotSet.has(v)) ? v : '';
+        renderAll(); markStatus();
+      };
+      fLot.oninput = () => { const v = fLot.value.trim(); if (!v || (state._lotSet && state._lotSet.has(v))) applyLot(); };
+      fLot.onchange = applyLot;
+      document.getElementById('lotSel').onchange = e => renderDrill(+e.target.value);
+      document.getElementById('flowView').onchange = e => { state.flowView = e.target.value; renderFlow(getFiltered()); };
+      const pendInp = document.getElementById('pendSearch');
+      pendInp.value = state.pendSearch || '';
+      pendInp.oninput = e => { state.pendSearch = e.target.value; renderPendingTable(getFiltered(), filteredLots()); };
+
+      // table filter dropdown
+      const tblFil = document.getElementById('tableFilter');
+      if (tblFil) {
+        tblFil.value = state.tableFilter || 'all';
+        tblFil.onchange = e => { state.tableFilter = e.target.value; renderPendingTable(getFiltered(), filteredLots()); };
+      }
+
+      renderAll(); markStatus(true);
+    }
+
+    function filterTableAndScroll(view) {
+      state.tableFilter = view;
+      const tf = document.getElementById('tableFilter');
+      if (tf) tf.value = view;
+      renderPendingTable(getFiltered(), filteredLots());
+      const card = document.getElementById('pendingCard');
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Fallback smooth scroll in case scrollIntoView behaves unexpectedly
+        setTimeout(() => {
+          const yOffset = -20;
+          const y = card.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }, 100);
+      }
+    }
+    function markStatus(initial) {
+      const el = document.getElementById('statusTxt');
+      const t = new Date(); const hh = t.getHours() % 12 || 12; const mm = String(t.getMinutes()).padStart(2, '0'); const ap = t.getHours() < 12 ? 'am' : 'pm';
+      el.className = 'status fresh';
+      el.innerHTML = `<span class="sd"></span> ${initial ? 'Loaded' : 'Refreshed'} at ${hh}:${mm} ${ap}`;
+    }
+
+    function loadData(regRows, chemRows) {
+      state.filters = { month: '', wash: '', party: '', lot: '', from: '', to: '', proc: '' };
+      state.flowView = 'all'; state.pendSearch = ''; state.tableFilter = 'all';
+      state.register = regRows ? ingestRegister(regRows) : state.register;
+      state.chem = chemRows ? ingestChem(chemRows) : state.chem;
+      enrichWashFromChem();
+      showDashboard();
+    }
+
+    /* Fallback only: if a row's "Process" column was blank (wash === "Other"),
+       borrow the Type from the chemical sheet by lot match. */
+    function enrichWashFromChem() {
+      if (!state.register || !state.chem) return;
+      const typeByLot = {};
+      state.chem.forEach(c => { if (c.lot && c.type) typeByLot[c.lot] = c.type; });
+      state.register.forEach(r => {
+        if ((r.wash === 'Other' || !r.wash) && typeByLot[r.lot]) {
+          r.wash = normWash(typeByLot[r.lot]);
+        }
+      });
+    }
+
+    /* ---------- live API ---------- */
+    function bootStep(id, cls, label) {
+      const el = document.getElementById('step-' + id); if (!el) return;
+      el.classList.remove('loading', 'ok', 'err');
+      if (cls) el.classList.add(cls);
+      el.querySelector('.bs-state').textContent = label;
+    }
+    function showBootInitial() {
+      const b = document.getElementById('bootScreen'); if (!b) return;
+      b.classList.remove('hidden');
+      document.getElementById('bootSpinner').classList.remove('err');
+      document.getElementById('bootTitle').textContent = 'Connecting to live data…';
+      document.getElementById('bootMsg').textContent = 'Fetching the IN/OUT register and chemical sheet from Google Sheets.';
+      document.getElementById('bootErrBox').classList.add('hidden');
+      document.getElementById('bootActions').classList.add('hidden');
+    }
+    function bootError(errs) {
+      const b = document.getElementById('bootScreen'); if (!b) return;
+      b.classList.remove('hidden');
+      document.getElementById('bootSpinner').classList.add('err');
+      document.getElementById('bootTitle').textContent = "Couldn't reach the live data";
+      document.getElementById('bootMsg').textContent = 'See the details below. The most common cause is a CORS issue or an expired echo URL.';
+      const box = document.getElementById('bootErrBox');
+      const lines = (errs || []).map(e => '<div>• <b>' + e.source + ':</b> ' + e.message + '</div>').join('');
+      box.innerHTML =
+        '<div style="margin-bottom:8px"><b>What failed:</b></div>' + (lines || '<div>No specific error details.</div>') +
+        '<div style="margin-top:10px"><b>Likely fixes:</b><br>' +
+        '1. The chemical URL is the <code>/echo</code> form — these <b>expire per deploy</b>. Re-deploy the Apps Script and use the new <code>/exec</code> URL.<br>' +
+        '2. In Apps Script: <b>Deploy → Manage deployments</b>, set access to <b>"Anyone"</b>.<br>' +
+        '3. Open this dashboard from a real <b>https://</b> URL (Netlify), not <code>file://</code>.<br>' +
+        '4. Open the API URLs directly in a new tab to confirm they return JSON.</div>';
+      box.classList.remove('hidden');
+      document.getElementById('bootActions').classList.remove('hidden');
+    }
+
+    async function fetchJSON(url, label) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort('timeout'), 25000); // 25s safety
+      try {
+        const res = await fetch(url, { redirect: 'follow', cache: 'no-store', signal: ctrl.signal });
+        if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + res.statusText);
+        const txt = await res.text();
+        // Apps Script sometimes returns HTML on auth issues — guard against that.
+        if (txt.trim().startsWith('<')) throw new Error('Got HTML, not JSON (likely auth/permission issue — share as "Anyone")');
+        let j; try { j = JSON.parse(txt); } catch { throw new Error('Invalid JSON in response'); }
+        const arr = Array.isArray(j) ? j : (j.data || []);
+        console.log('[' + label + '] OK · ' + arr.length + ' rows from', url);
+        return arr;
+      } catch (e) {
+        // network/CORS failures throw TypeError "Failed to fetch"
+        const msg = (e && e.message) ? e.message : String(e);
+        console.error('[' + label + '] FAILED:', msg, '·', url);
+        throw new Error(msg + (msg.includes('Failed to fetch') ? ' (likely CORS / network block)' : ''));
+      } finally {
+        clearTimeout(t);
+      }
+    }
+
+    function setStatus(cls, msg) {
+      const el = document.getElementById('statusTxt');
+      if (!el) return;
+      el.className = 'status ' + cls;
+      el.innerHTML = '<span class="sd"></span> ' + msg;
+    }
+
+    async function loadFromAPI(isRefresh) {
+      const hasReg = !!API.register, hasChem = !!API.chem;
+      if (!hasReg && !hasChem) return false; // nothing configured
+      if (!isRefresh) showBootInitial();
+      setStatus('refreshing', (isRefresh ? 'Refreshing' : 'Loading') + ' live data…');
+
+      // mark both steps "loading"
+      bootStep('reg', hasReg ? 'loading' : '', hasReg ? 'fetching…' : 'not configured');
+      bootStep('chem', hasChem ? 'loading' : '', hasChem ? 'fetching…' : 'not configured');
+
+      // Fetch in parallel for speed
+      const errs = [];
+      const [regRes, chemRes] = await Promise.allSettled([
+        hasReg ? fetchJSON(API.register, 'register') : Promise.resolve(null),
+        hasChem ? fetchJSON(API.chem, 'chemical') : Promise.resolve(null)
+      ]);
+
+      let reg = null, chem = null;
+      if (hasReg) {
+        if (regRes.status === 'fulfilled') { reg = regRes.value; bootStep('reg', 'ok', (reg && reg.length || 0) + ' rows ✓'); }
+        else { errs.push({ source: 'Register', message: regRes.reason && regRes.reason.message || String(regRes.reason) }); bootStep('reg', 'err', 'failed'); }
+      }
+      if (hasChem) {
+        if (chemRes.status === 'fulfilled') { chem = chemRes.value; bootStep('chem', 'ok', (chem && chem.length || 0) + ' rows ✓'); }
+        else { errs.push({ source: 'Chemical', message: chemRes.reason && chemRes.reason.message || String(chemRes.reason) }); bootStep('chem', 'err', 'failed'); }
+      }
+
+      if (reg || chem) {
+        loadData(reg, chem);   // showDashboard() hides boot + upload screens
+        if (errs.length) setStatus('refreshing', 'Loaded · partial: ' + errs.map(e => e.source).join(', ') + ' failed');
+        else markStatus(!isRefresh);
+        return true;
+      }
+      // total failure
+      setStatus('refreshing', 'Live fetch failed');
+      if (!isRefresh) bootError(errs);
+      return false;
+    }
+
+    function startAutoRefresh() {
+      if (autoTimer) clearInterval(autoTimer);
+      if (AUTO_REFRESH_MS > 0 && (API.register || API.chem)) {
+        autoTimer = setInterval(() => loadFromAPI(true), AUTO_REFRESH_MS);
+      }
+    }
+
+    function handleFiles(files) {
+      let reg = null, chem = null, errs = 0; let pending = files.length;
+      if (!pending) return;
+      [...files].forEach(f => {
+        const rd = new FileReader();
+        rd.onload = e => {
+          try {
+            const j = JSON.parse(e.target.result); const arr = Array.isArray(j) ? j : (j.data || []); const t = detect(arr);
+            if (t === 'register') reg = arr; else if (t === 'chemical') chem = arr; else errs++;
+          } catch (err) { errs++; }
+          if (--pending === 0) { if (!reg && !chem) { alert('Could not recognise these files. Expecting your IN/OUT register and/or chemical sheet JSON.'); return; } loadData(reg, chem); }
+        };
+        rd.readAsText(f);
+      });
+    }
+
+    /* events */
+    const dz = document.getElementById('dropzone'), fi = document.getElementById('fileInput');
+    document.getElementById('pickBtn').onclick = e => { e.stopPropagation(); fi.click(); };
+    dz.onclick = () => fi.click();
+    fi.onchange = () => handleFiles(fi.files);
+    ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('drag'); }));
+    ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('drag'); }));
+    dz.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
+    document.getElementById('sampleBtn').onclick = e => { e.stopPropagation(); loadData(SAMPLE_REGISTER, SAMPLE_CHEM); };
+
+    // Reset = clear filters (not data)
+    document.getElementById('resetBtn').onclick = () => {
+      state.filters = { month: '', wash: '', party: '', lot: '', from: '', to: '', proc: '' };
+      state.flowView = 'all'; state.pendSearch = ''; state.tableFilter = 'all';
+      ['fMonth', 'fWash', 'fParty', 'fLot'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      document.getElementById('fFrom').value = ''; document.getElementById('fTo').value = '';
+      const fv = document.getElementById('flowView'); if (fv) fv.value = 'all';
+      const ps = document.getElementById('pendSearch'); if (ps) ps.value = '';
+      const tf = document.getElementById('tableFilter'); if (tf) tf.value = 'all';
+      renderAll(); markStatus();
+    };
+    // Refresh = re-fetch live data if an API is configured, else re-render
+    document.getElementById('refreshBtn').onclick = () => {
+      if (API.register || API.chem) { loadFromAPI(true); return; }
+      const el = document.getElementById('statusTxt'); el.className = 'status refreshing';
+      el.innerHTML = '<span class="sd"></span> Refreshing…';
+      setTimeout(() => { renderAll(); markStatus(); }, 350);
+    };
+    // Export PDF = browser print → "Save as PDF"
+    document.getElementById('exportBtn').onclick = () => window.print();
+    // New upload
+    document.getElementById('newDataBtn').onclick = () => {
+      fi.value = '';
+      document.getElementById('dashboard').classList.add('hidden');
+      document.getElementById('uploadScreen').classList.remove('hidden');
+    };
+
+    // boot-screen action buttons
+    document.getElementById('bootRetry').onclick = () => loadFromAPI(false);
+    document.getElementById('bootUpload').onclick = () => {
+      document.getElementById('bootScreen').classList.add('hidden');
+      document.getElementById('uploadScreen').classList.remove('hidden');
+    };
+    document.getElementById('bootSample').onclick = () => loadData(SAMPLE_REGISTER, SAMPLE_CHEM);
+
+    // Auto-load: API-first.
+    // 1) FORCE the correct initial visibility — boot screen ON, others OFF — so that
+    //    nothing ever flashes the upload screen at the user. This runs synchronously
+    //    before any await, no matter what.
+    // 2) Kick off the live fetch immediately.
+    // 3) If both URLs are missing, fall back to sample. We never silently fall back
+    //    on a fetch failure — the boot screen shows the error and offers retry.
+    (function bootSequence() {
+      document.getElementById('bootScreen').classList.remove('hidden');
+      document.getElementById('uploadScreen').classList.add('hidden');
+      document.getElementById('dashboard').classList.add('hidden');
+      showBootInitial();
+      console.log('[ExactChoice] Booting — register:', API.register ? 'configured' : 'EMPTY', '· chemical:', API.chem ? 'configured' : 'EMPTY');
+
+      (async () => {
+        const ok = await loadFromAPI(false);
+        if (!ok && !(API.register || API.chem)) loadData(SAMPLE_REGISTER, SAMPLE_CHEM);
+        startAutoRefresh();
+      })();
+    })();
+  </script>
+</body>
+
+</html>
