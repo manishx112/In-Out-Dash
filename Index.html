@@ -13,6 +13,8 @@
     :root {
       --bg: #f0f4f8;
       --card: #ffffff;
+      --bg2: var(--bg2);
+      --line: var(--line);
       --border: #e2e8f0;
       --radius: 16px;
       --ink: #0f172a;
@@ -33,6 +35,53 @@
       --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 24px rgba(15, 23, 42, .06);
       --shadow-lift: 0 8px 16px rgba(15, 23, 42, .08), 0 20px 48px rgba(15, 23, 42, .12);
     }
+
+    [data-theme="dark"] {
+      --bg: #0b1220;
+      --card: #151f33;
+      --bg2: #1c2740;
+      --line: #243049;
+      --border: #2a3650;
+      --ink: #e6edf6;
+      --muted: #9fb0c7;
+      --soft: #6b7c97;
+      --blue: #3b82f6;
+      --blue-t: rgba(59, 130, 246, .16);
+      --teal-t: rgba(8, 145, 178, .16);
+      --green-t: rgba(5, 150, 105, .16);
+      --amber-t: rgba(217, 119, 6, .16);
+      --violet-t: rgba(124, 58, 237, .18);
+      --rose-t: rgba(225, 29, 72, .16);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .35);
+      --shadow-lift: 0 8px 16px rgba(0, 0, 0, .4), 0 20px 48px rgba(0, 0, 0, .5);
+    }
+
+    html { color-scheme: light dark; }
+    body { transition: background .25s ease, color .25s ease; }
+    .card, .btn, .fselect, .pill { transition: background .25s ease, border-color .25s ease, color .25s ease; }
+
+    /* fixed top-right theme toggle (common website pattern) */
+    #themeBtn {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 1000;
+      width: 42px;
+      height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--ink);
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: background .2s ease, color .2s ease, border-color .2s ease, transform .15s ease;
+    }
+    #themeBtn:hover { border-color: var(--blue); color: var(--blue); transform: translateY(-1px); }
+    #themeBtn:active { transform: translateY(0); }
+    @media print { #themeBtn { display: none; } }
 
     * {
       box-sizing: border-box;
@@ -280,7 +329,7 @@
       display: inline-flex;
       align-items: center;
       gap: 9px;
-      background: #f8fafc;
+      background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: 999px;
       padding: 8px 14px;
@@ -328,7 +377,7 @@
       font-weight: 600;
       font-size: 12.5px;
       color: var(--ink);
-      background: #fff;
+      background: var(--card);
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 9px 32px 9px 14px;
@@ -355,7 +404,7 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: #fff;
+      background: var(--card);
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 4px 12px
@@ -640,7 +689,7 @@
     }
 
     th {
-      background: #f8fafc;
+      background: var(--bg2);
       text-align: left;
       padding: 11px 14px;
       font-weight: 700;
@@ -673,7 +722,7 @@
       font-size: 12.5px;
       font-weight: 500;
       color: var(--ink);
-      background: #f8fafc;
+      background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 8px 14px 8px 34px;
@@ -687,7 +736,7 @@
 
     .search-input:focus {
       border-color: var(--blue);
-      background-color: #fff;
+      background-color: var(--card);
       box-shadow: 0 0 0 3px var(--blue-t)
     }
 
@@ -747,7 +796,7 @@
 
     td {
       padding: 11px 14px;
-      border-bottom: 1px solid #f1f5f9;
+      border-bottom: 1px solid var(--line);
       white-space: nowrap;
       color: var(--ink);
       font-weight: 500
@@ -805,7 +854,7 @@
     }
 
     .tag-slate {
-      background: #f1f5f9;
+      background: var(--line);
       color: var(--soft)
     }
 
@@ -834,7 +883,7 @@
     }
 
     .meta-chip {
-      background: #f8fafc;
+      background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 9px 14px;
@@ -988,7 +1037,7 @@
       align-items: center;
       gap: 10px;
       padding: 10px 14px;
-      background: #f8fafc;
+      background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: 10px;
       font-size: 13px
@@ -1072,7 +1121,7 @@
     }
 
     .boot-err code {
-      background: #fff;
+      background: var(--card);
       padding: 1px 5px;
       border-radius: 4px;
       font-size: 11.5px
@@ -1307,7 +1356,7 @@
     /* PRINT - Export PDF via browser */
     @media print {
       body {
-        background: #fff;
+        background: var(--card);
         padding: 14px;
         color: #000
       }
@@ -1359,7 +1408,7 @@
       }
 
       .pill {
-        background: #fff;
+        background: var(--card);
         border: 1px solid #e2e8f0
       }
 
@@ -1379,6 +1428,10 @@
 </head>
 
 <body>
+  <button id="themeBtn" title="Toggle dark / light mode" aria-label="Toggle theme">
+    <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+  </button>
   <div class="wrap">
 
     <header class="fade-up">
@@ -1624,8 +1677,11 @@
     const SAMPLE_CHEM = [{ "Lot No.": "4157", "PCS": "155", "Type": "Tint", "4BB": "", "BIO CRUDE": "", "BLACK BR-240": "", "BLACK E": "63 g", "BLUE BRN": "56 g", "BLUE BRN (AAA)": "", "BLUE BRN CRUDE": "51 g", "BLUE GLL": "10 g", "BORDEAUX": "", "BOTTLE GREEN 1556": "", "BRAKET": "", "BRIGHTEX": "", "BROWN CR": "60 g", "CASTICK": "", "CAUSTIC FLAKES": "", "CELLUNASE 5300": "", "CV": "", "DANA": "", "DYE FIXER": "", "FULL BRIGHT": "", "GREEN HE4BD": "", "GREY 905": "", "HARDNER": "8 g", "HEPO": "", "HI": "21 g", "HYDROGEN": "", "MAXCLEAN": "", "MUSTURED OIL": "97 g", "OT PASTE": "33 g", "OXALIC ACID": "", "PINKI": "", "POLY BOUNCE": "", "REZING": "", "RESIMIX 555": "", "RODOSOFT -525 SILICONE": "59 g", "Salt": "", "S BLACK A-1": "", "SOAPNER RAW": "", "SOAPNER TUBE": "", "SODA": "", "SODIUM": "", "SULPHUR BLACK A-1": "33 g", "SURF": "", "ULTRA FULL DC CONE": "", "ULTRA SIZE": "", "VINEGER": "30 g", "YELLOW GLL": "", "Grand Total": "47 g" }, { "Lot No.": "4157", "PCS": "544", "Type": "Hard Wash", "4BB": "", "BIO CRUDE": "", "BLACK BR-240": "13 g", "BLACK E": "", "BLUE BRN": "8 g", "BLUE BRN (AAA)": "", "BLUE BRN CRUDE": "30 g", "BLUE GLL": "", "BORDEAUX": "29 g", "BOTTLE GREEN 1556": "", "BRAKET": "", "BRIGHTEX": "", "BROWN CR": "35 g", "CASTICK": "", "CAUSTIC FLAKES": "", "CELLUNASE 5300": "", "CV": "", "DANA": "", "DYE FIXER": "", "FULL BRIGHT": "35 g", "GREEN HE4BD": "", "GREY 905": "29 g", "HARDNER": "12 g", "HEPO": "", "HI": "51 g", "HYDROGEN": "39 Ltr", "MAXCLEAN": "71 g", "MUSTURED OIL": "", "OT PASTE": "", "OXALIC ACID": "24 g", "PINKI": "", "POLY BOUNCE": "", "REZING": "", "RESIMIX 555": "", "RODOSOFT -525 SILICONE": "", "Salt": "", "S BLACK A-1": "40 g", "SOAPNER RAW": "", "SOAPNER TUBE": "", "SODA": "5 g", "SODIUM": "25 g", "SULPHUR BLACK A-1": "", "SURF": "15 g", "ULTRA FULL DC CONE": "", "ULTRA SIZE": "", "VINEGER": "", "YELLOW GLL": "", "Grand Total": "" }, { "Lot No.": "4134", "PCS": "384", "Type": "Blast", "4BB": "", "BIO CRUDE": "", "BLACK BR-240": "", "BLACK E": "", "BLUE BRN": "", "BLUE BRN (AAA)": "", "BLUE BRN CRUDE": "82 g", "BLUE GLL": "69 g", "BORDEAUX": "", "BOTTLE GREEN 1556": "93 g", "BRAKET": "", "BRIGHTEX": "", "BROWN CR": "", "CASTICK": "30 g", "CAUSTIC FLAKES": "", "CELLUNASE 5300": "31 g", "CV": "", "DANA": "37 g", "DYE FIXER": "60 g", "FULL BRIGHT": "88 g", "GREEN HE4BD": "", "GREY 905": "92 g", "HARDNER": "", "HEPO": "63 ml", "HI": "64 g", "HYDROGEN": "99 Ltr", "MAXCLEAN": "", "MUSTURED OIL": "54 g", "OT PASTE": "", "OXALIC ACID": "86 g", "PINKI": "", "POLY BOUNCE": "", "REZING": "", "RESIMIX 555": "", "RODOSOFT -525 SILICONE": "", "Salt": "65 g", "S BLACK A-1": "79 g", "SOAPNER RAW": "", "SOAPNER TUBE": "56 g", "SODA": "", "SODIUM": "", "SULPHUR BLACK A-1": "", "SURF": "", "ULTRA FULL DC CONE": "", "ULTRA SIZE": "", "VINEGER": "", "YELLOW GLL": "", "Grand Total": "" }, { "Lot No.": "4121", "PCS": "1031", "Type": "Towal", "4BB": "", "BIO CRUDE": "37 g", "BLACK BR-240": "", "BLACK E": "", "BLUE BRN": "", "BLUE BRN (AAA)": "", "BLUE BRN CRUDE": "90 g", "BLUE GLL": "23 g", "BORDEAUX": "", "BOTTLE GREEN 1556": "", "BRAKET": "", "BRIGHTEX": "", "BROWN CR": "", "CASTICK": "21 g", "CAUSTIC FLAKES": "79 g", "CELLUNASE 5300": "", "CV": "26 g", "DANA": "", "DYE FIXER": "", "FULL BRIGHT": "", "GREEN HE4BD": "", "GREY 905": "", "HARDNER": "", "HEPO": "", "HI": "", "HYDROGEN": "62 Ltr", "MAXCLEAN": "", "MUSTURED OIL": "", "OT PASTE": "", "OXALIC ACID": "", "PINKI": "", "POLY BOUNCE": "2 g", "REZING": "72 g", "RESIMIX 555": "13 g", "RODOSOFT -525 SILICONE": "64 g", "Salt": "12 g", "S BLACK A-1": "", "SOAPNER RAW": "", "SOAPNER TUBE": "", "SODA": "", "SODIUM": "", "SULPHUR BLACK A-1": "51 g", "SURF": "", "ULTRA FULL DC CONE": "", "ULTRA SIZE": "", "VINEGER": "", "YELLOW GLL": "", "Grand Total": "" }, { "Lot No.": "4154", "PCS": "228", "Type": "Blast", "4BB": "51 g", "BIO CRUDE": "", "BLACK BR-240": "", "BLACK E": "", "BLUE BRN": "", "BLUE BRN (AAA)": "", "BLUE BRN CRUDE": "", "BLUE GLL": "", "BORDEAUX": "12 g", "BOTTLE GREEN 1556": "", "BRAKET": "73 g", "BRIGHTEX": "", "BROWN CR": "", "CASTICK": "", "CAUSTIC FLAKES": "15 g", "CELLUNASE 5300": "", "CV": "", "DANA": "", "DYE FIXER": "49 g", "FULL BRIGHT": "", "GREEN HE4BD": "", "GREY 905": "21 g", "HARDNER": "100 g", "HEPO": "88 ml", "HI": "", "HYDROGEN": "", "MAXCLEAN": "", "MUSTURED OIL": "", "OT PASTE": "", "OXALIC ACID": "", "PINKI": "", "POLY BOUNCE": "", "REZING": "", "RESIMIX 555": "", "RODOSOFT -525 SILICONE": "1 g", "Salt": "", "S BLACK A-1": "", "SOAPNER RAW": "", "SOAPNER TUBE": "", "SODA": "", "SODIUM": "", "SULPHUR BLACK A-1": "", "SURF": "", "ULTRA FULL DC CONE": "", "ULTRA SIZE": "", "VINEGER": "82 g", "YELLOW GLL": "17 g", "Grand Total": "" }, { "Lot No.": "4155", "PCS": "443", "Type": "Towal", "4BB": "", "BIO CRUDE": "37 g", "BLACK BR-240": "", "BLACK E": "", "BLUE BRN": "", "BLUE BRN (AAA)": "", "BLUE BRN CRUDE": "90 g", "BLUE GLL": "23 g", "BORDEAUX": "", "BOTTLE GREEN 1556": "", "BRAKET": "", "BRIGHTEX": "", "BROWN CR": "", "CASTICK": "21 g", "CAUSTIC FLAKES": "79 g", "CELLUNASE 5300": "", "CV": "26 g", "DANA": "", "DYE FIXER": "", "FULL BRIGHT": "", "GREEN HE4BD": "", "GREY 905": "", "HARDNER": "", "HEPO": "", "HI": "", "HYDROGEN": "62 Ltr", "MAXCLEAN": "", "MUSTURED OIL": "", "OT PASTE": "", "OXALIC ACID": "", "PINKI": "", "POLY BOUNCE": "2 g", "REZING": "72 g", "RESIMIX 555": "13 g", "RODOSOFT -525 SILICONE": "64 g", "Salt": "12 g", "S BLACK A-1": "", "SOAPNER RAW": "", "SOAPNER TUBE": "", "SODA": "", "SODIUM": "", "SULPHUR BLACK A-1": "51 g", "SURF": "", "ULTRA FULL DC CONE": "", "ULTRA SIZE": "", "VINEGER": "", "YELLOW GLL": "", "Grand Total": "" }];
 
     const PAL = { blue: '#2563eb', teal: '#0891b2', green: '#059669', amber: '#d97706', violet: '#7c3aed', rose: '#e11d48' };
+    // Chart colors are mutated by applyTheme() so Plotly matches light/dark. FONT/GRID are read
+    // at render time; AXIS_INK is the strong on-card label color (bar outside text, pie center).
     const FONT = { family: 'Poppins, sans-serif', color: '#475569', size: 12 };
-    const GRID = '#e2e8f0';
+    let GRID = '#e2e8f0';
+    let AXIS_INK = '#0f172a';
     const CONFIG = { displayModeBar: false, responsive: true };
     const HL = { bgcolor: '#1e293b', font: { family: 'Poppins, sans-serif', color: '#fff' }, bordercolor: '#475569' };
     const MONTH_ORDER = { January: 1, February: 2, March: 3, April: 4, May: 5, June: 6, July: 7, August: 8, September: 9, October: 10, November: 11, December: 12 };
@@ -2147,14 +2203,14 @@
         marker: { colors: PARTY_COLORS, line: { color: '#fff', width: 2 } },
         textinfo: 'label+percent', textposition: 'outside',
         texttemplate: '%{label} - %{percent}',
-        outsidetextfont: { family: 'Poppins', size: 12, color: '#475569' },
+        outsidetextfont: { family: 'Poppins', size: 12, color: AXIS_INK },
         hovertemplate: '%{label}<br>%{value:,} pcs (%{percent})<extra></extra>', hoverlabel: HL
       }],
         baseLayout({
           margin: { l: 80, r: 80, t: 30, b: 30 }, showlegend: false,
           annotations: [{
             text: fmt(vals.reduce((s, v) => s + v, 0)) + '<br><span style="font-size:11px;color:#94a3b8">total pcs</span>',
-            showarrow: false, font: { family: 'Poppins', size: 18, color: '#0f172a' }
+            showarrow: false, font: { family: 'Poppins', size: 18, color: AXIS_INK }
           }]
         }), CONFIG);
 
@@ -2186,7 +2242,7 @@
         x: vals, y: parties, type: 'bar', orientation: 'h', marker: { color: cols },
         text: txt, textposition: 'auto',
         insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
-        outsidetextfont: { family: 'Poppins', size: 11, color: '#0f172a' },
+        outsidetextfont: { family: 'Poppins', size: 11, color: AXIS_INK },
         insidetextanchor: 'middle',
         hovertemplate: '%{y}<br>%{x:,} pcs in factory<extra></extra>', hoverlabel: HL,
         cliponaxis: false
@@ -2234,14 +2290,14 @@
           x: parties, y: inVals, name: 'IN', type: 'bar', marker: { color: PAL.blue },
           text: inVals.map(v => v ? fmt(v) : ''), textposition: 'auto',
           insidetextfont: { family: 'Poppins', size: 10, color: '#ffffff' },
-          outsidetextfont: { family: 'Poppins', size: 10, color: '#0f172a' },
+          outsidetextfont: { family: 'Poppins', size: 10, color: AXIS_INK },
           hovertemplate: '%{x}<br>IN %{y:,} pcs<extra></extra>', hoverlabel: HL, cliponaxis: false
         },
         {
           x: parties, y: outVals, name: 'OUT', type: 'bar', marker: { color: PAL.teal },
           text: outVals.map(v => v ? fmt(v) : ''), textposition: 'auto',
           insidetextfont: { family: 'Poppins', size: 10, color: '#ffffff' },
-          outsidetextfont: { family: 'Poppins', size: 10, color: '#0f172a' },
+          outsidetextfont: { family: 'Poppins', size: 10, color: AXIS_INK },
           hovertemplate: '%{x}<br>OUT %{y:,} pcs<extra></extra>', hoverlabel: HL, cliponaxis: false
         }],
         baseLayout({
@@ -2316,18 +2372,18 @@
       const rows = entries.map(r => {
         const rw = r.rewash;
         const ok = rw.ok === true;
-        const color = ok ? '#059669' : '#e11d48';
-        const bg = ok ? '#ecfdf5' : '#fef2f4';
+        const color = ok ? '#10b981' : '#f43f5e';
+        const bg = ok ? 'rgba(16,185,129,.12)' : 'rgba(244,63,94,.12)';
         const verdict = ok ? 'Rewash accepted' : 'Rewash not accepted';
         const note = rw.days == null ? '' : (rw.days <= 10 ? 'within 10-day window' : 'older than 10 days');
-        return `<div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid #e2e8f0;border-radius:12px;background:${bg}">
+        return `<div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:${bg}">
           <div style="min-width:62px;text-align:center;line-height:1.05">
             <div style="font-size:24px;font-weight:700;color:${color}">${rw.days != null ? rw.days : '—'}</div>
-            <div style="font-size:11px;font-weight:500;color:#64748b">days</div>
+            <div style="font-size:11px;font-weight:500;color:var(--muted)">days</div>
           </div>
           <div style="flex:1">
             <div style="font-weight:600;color:${color}">${verdict} ${ok ? '✓' : '✗'}</div>
-            <div style="font-size:12px;color:#64748b">${note}${rw.raw ? ` · sheet value: ${rw.raw}` : ''}</div>
+            <div style="font-size:12px;color:var(--muted)">${note}${rw.raw ? ` · sheet value: ${rw.raw}` : ''}</div>
           </div>
         </div>`;
       }).join('');
@@ -2369,7 +2425,7 @@
         x: pcsVals, y: labels, type: 'bar', orientation: 'h', marker: { color: cols },
         text: txt, textposition: 'auto',
         insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
-        outsidetextfont: { family: 'Poppins', size: 11, color: '#0f172a' },
+        outsidetextfont: { family: 'Poppins', size: 11, color: AXIS_INK },
         insidetextanchor: 'middle',
         customdata: items.map(i => [i.label, fmt(i.pcs), i.lots, i.key]),
         hovertemplate: '<b>%{customdata[0]}</b><br>%{customdata[1]} pcs · %{customdata[2]} lots<br><i>click to view lots</i><extra></extra>',
@@ -2379,7 +2435,7 @@
           height: h,
           margin: { l: 120, r: 70, t: 16, b: 36 },
           xaxis: { gridcolor: GRID, title: { text: 'pieces processed', font: FONT }, tickfont: FONT },
-          yaxis: { automargin: true, tickfont: { family: 'Poppins', size: 12, color: '#0f172a' }, ticksuffix: '  ' }
+          yaxis: { automargin: true, tickfont: { family: 'Poppins', size: 12, color: AXIS_INK }, ticksuffix: '  ' }
         }), CONFIG);
 
       // make bars clickable → drill into the lot table
@@ -2442,7 +2498,7 @@
         x: vals, y: labels, type: 'bar', orientation: 'h', marker: { color: cols },
         text: txtLabels, textposition: 'auto',
         insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
-        outsidetextfont: { family: 'Poppins', size: 11, color: '#0f172a' },
+        outsidetextfont: { family: 'Poppins', size: 11, color: AXIS_INK },
         insidetextanchor: 'middle',
         customdata: names.map(n => [fmtChem(agg[n].val, agg[n].unit), n]),
         hovertemplate: '<b>%{customdata[1]}</b><br>%{customdata[0]}<extra></extra>', hoverlabel: HL,
@@ -2471,7 +2527,7 @@
         x: vals, y: names.map(n => n.length > 22 ? n.slice(0, 21) + '…' : n), type: 'bar', orientation: 'h', marker: { color: cols },
         customdata: vals.map((v, i) => fmtChem(v, units[i])), text: vals.map((v, i) => fmtChem(v, units[i])), textposition: 'auto',
         insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
-        outsidetextfont: { family: 'Poppins', size: 11, color: '#0f172a' },
+        outsidetextfont: { family: 'Poppins', size: 11, color: AXIS_INK },
         hovertemplate: '%{y}<br>%{customdata}<extra></extra>', hoverlabel: HL,
         cliponaxis: false
       }],
@@ -2762,6 +2818,29 @@
       el.innerHTML = '<span class="sd"></span> Refreshing…';
       setTimeout(() => { renderAll(); markStatus(); }, 350);
     };
+    // ----- Dark / light theme -----
+    const ICON_MOON = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+    const ICON_SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>';
+    function applyTheme(dark) {
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      // keep Plotly colors in sync with the CSS theme
+      FONT.color = dark ? '#9fb0c7' : '#475569';
+      GRID = dark ? '#2a3650' : '#e2e8f0';
+      AXIS_INK = dark ? '#e6edf6' : '#0f172a';
+      // show the icon for what a click will switch TO: moon in light, sun in dark
+      const icon = document.getElementById('themeIcon'); if (icon) icon.innerHTML = dark ? ICON_SUN : ICON_MOON;
+      try { localStorage.setItem('ec_theme', dark ? 'dark' : 'light'); } catch (e) { }
+      // re-render so charts repaint with the new palette (only once data + dashboard are up)
+      if (state.register && !document.getElementById('dashboard').classList.contains('hidden')) renderAll();
+    }
+    document.getElementById('themeBtn').onclick = () =>
+      applyTheme(document.documentElement.getAttribute('data-theme') !== 'dark');
+    // initial theme: light by default; only go dark if the user previously chose dark
+    (function initTheme() {
+      let saved; try { saved = localStorage.getItem('ec_theme'); } catch (e) { }
+      applyTheme(saved === 'dark');
+    })();
+
     // Export PDF = browser print → "Save as PDF"
     document.getElementById('exportBtn').onclick = () => window.print();
     // New upload
