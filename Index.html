@@ -13,8 +13,9 @@
     :root {
       --bg: #f0f4f8;
       --card: #ffffff;
-      --bg2: var(--bg2);
-      --line: var(--line);
+      --bg2: #f8fafc;
+      --line: #f1f5f9;
+      --thead: #eef2f8;
       --border: #e2e8f0;
       --radius: 16px;
       --ink: #0f172a;
@@ -41,6 +42,7 @@
       --card: #151f33;
       --bg2: #1c2740;
       --line: #243049;
+      --thead: #202c46;
       --border: #2a3650;
       --ink: #e6edf6;
       --muted: #9fb0c7;
@@ -679,8 +681,13 @@
       position: sticky;
       top: 0;
       z-index: 2;
+      background-clip: padding-box;
       box-shadow: 0 1px 0 var(--border)
     }
+
+    /* round the sticky header's outer corners so it doesn't poke past the rounded wrap */
+    .tbl-wrap.scroll thead th:first-child { border-top-left-radius: 12px }
+    .tbl-wrap.scroll thead th:last-child { border-top-right-radius: 12px }
 
     table {
       width: 100%;
@@ -689,7 +696,7 @@
     }
 
     th {
-      background: var(--bg2);
+      background: var(--thead);
       text-align: left;
       padding: 11px 14px;
       font-weight: 700;
@@ -1925,15 +1932,20 @@
     }
 
     /* ---------- filters ---------- */
-    function getFiltered() {
+    function getFiltered() { return getFilteredExcept(null); }
+
+    // Same as getFiltered but ignores ONE filter key. The breakdown charts pass their own
+    // dimension so a click drills the table/other visuals without collapsing the clicked chart
+    // (Power BI cross-filter behavior). All other active filters still apply.
+    function getFilteredExcept(skip) {
       if (!state.register) return [];
       const f = state.filters;
       return state.register.filter(r => {
-        if (f.month && r.month !== f.month) return false;
-        if (f.wash && r.wash !== f.wash) return false;
-        if (f.party && r.party !== f.party) return false;
-        if (f.lot && r.lot !== f.lot) return false;
-        if (f.proc && !(r.proc && r.proc[f.proc])) return false;
+        if (skip !== 'month' && f.month && r.month !== f.month) return false;
+        if (skip !== 'wash' && f.wash && r.wash !== f.wash) return false;
+        if (skip !== 'party' && f.party && r.party !== f.party) return false;
+        if (skip !== 'lot' && f.lot && r.lot !== f.lot) return false;
+        if (skip !== 'proc' && f.proc && !(r.proc && r.proc[f.proc])) return false;
         if (f.from && (!r._isoIn || r._isoIn < f.from)) return false;
         if (f.to && (!r._isoIn || r._isoIn > f.to)) return false;
         return true;
@@ -2322,10 +2334,15 @@
       });
     }
 
-    function renderWashType(reg) {
+    function renderWashType() {
+      // Each chart ignores its OWN filter so clicking a bar drills the table/other visuals
+      // without making the clicked chart collapse to a single bar.
+      const procReg = getFilteredExcept('proc');
+      const washReg = getFilteredExcept('wash');
+
       // ----- left card: pieces per finishing process (the 9 numeric columns) -----
       const proc = {}; const procLots = new Set();
-      reg.forEach(r => {
+      procReg.forEach(r => {
         if (!r.real || !r.proc) return;
         let any = false;
         for (const col in r.proc) { proc[col] = proc[col] || { pcs: 0, lots: 0 }; proc[col].pcs += r.proc[col]; proc[col].lots++; any = true; }
@@ -2335,7 +2352,7 @@
 
       // ----- right card: pieces per wash type (the Process column) -----
       const wash = {}; const washLots = new Set();
-      reg.forEach(r => {
+      washReg.forEach(r => {
         if (!r.real) return;
         const w = r.wash || 'Other';
         wash[w] = wash[w] || { pcs: 0, lots: 0 };
@@ -2347,9 +2364,9 @@
       const h = Math.max(280, Math.max(procItems.length, washItems.length) * 46 + 60);
 
       drawHBar(document.getElementById('procChart'), document.getElementById('procSub'),
-        procItems, procLots.size, 'Most-used on top · pieces per process', h, false, 'proc');
+        procItems, procLots.size, 'Most-used on top · pieces per process', h, false, 'proc', state.filters.proc);
       drawHBar(document.getElementById('washChart'), document.getElementById('washSub'),
-        washItems, washLots.size, 'Most-used on top · pieces per wash type', h, true, 'wash');
+        washItems, washLots.size, 'Most-used on top · pieces per wash type', h, true, 'wash', state.filters.wash);
     }
 
     // Rewash status — only shown when a single lot is selected via the Lot filter.
@@ -2390,22 +2407,28 @@
       body.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px">${rows}</div>`;
     }
 
-    // Click a bar → set that filter and scroll down to the lot table (drill-in).
+    // Click a bar → drill into that filter and scroll to the lot table.
+    // Click the SAME bar again → toggle the filter off and show everything (Power BI style).
     function drillByFilter(kind, value) {
       if (!value) return;
-      state.filters[kind] = value;
-      if (kind === 'wash') { const el = document.getElementById('fWash'); if (el) el.value = value; }
+      const isActive = state.filters[kind] === value;
+      const next = isActive ? '' : value;       // same bar clicked → clear; new bar → apply
+      state.filters[kind] = next;
+      if (kind === 'wash') { const el = document.getElementById('fWash'); if (el) el.value = next; }
       state.tableFilter = 'all';
       const tf = document.getElementById('tableFilter'); if (tf) tf.value = 'all';
       renderAll(); markStatus();
-      const card = document.getElementById('pendingCard');
-      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // only jump to the table when drilling IN; clearing keeps you where you are
+      if (next) {
+        const card = document.getElementById('pendingCard');
+        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
 
     // Horizontal pieces-by-X bar. items: [{key,label,pcs,lots,color?}]. useItemColor uses item.color,
     // else a blue→rose gradient. filterKind ('proc'|'wash') makes each bar clickable → drills into the table.
     // Shows a "No data" state when items is empty (e.g. a lot filter that matches nothing).
-    function drawHBar(gd, subEl, items, totalLots, subBase, h, useItemColor, filterKind) {
+    function drawHBar(gd, subEl, items, totalLots, subBase, h, useItemColor, filterKind, activeKey) {
       gd.style.height = h + 'px';
       gd.innerHTML = '';
       if (!items.length) {
@@ -2414,15 +2437,18 @@
         return;
       }
       items.sort((a, b) => a.pcs - b.pcs); // ascending → largest lands at the top
-      if (subEl) subEl.textContent = `${subBase} · (Total Lots ${totalLots}) · click a bar to drill in`;
+      const hint = activeKey ? 'click the active bar to clear' : 'click a bar to drill in';
+      if (subEl) subEl.textContent = `${subBase} · (Total Lots ${totalLots}) · ${hint}`;
 
       const labels = items.map(i => i.label);
       const pcsVals = items.map(i => i.pcs);
       const cols = useItemColor ? items.map(i => i.color) : gradient(PAL.blue, PAL.rose, items.length);
+      // when a bar is selected, fade the others so the selection reads clearly (Power BI style)
+      const opacity = activeKey ? items.map(i => i.key === activeKey ? 1 : 0.28) : 1;
       const txt = items.map(i => `${fmt(i.pcs)} pcs  (${i.lots} lot${i.lots !== 1 ? 's' : ''})`);
 
       Plotly.newPlot(gd, [{
-        x: pcsVals, y: labels, type: 'bar', orientation: 'h', marker: { color: cols },
+        x: pcsVals, y: labels, type: 'bar', orientation: 'h', marker: { color: cols, opacity: opacity },
         text: txt, textposition: 'auto',
         insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
         outsidetextfont: { family: 'Poppins', size: 11, color: AXIS_INK },
@@ -2547,7 +2573,7 @@
       document.getElementById('recCount').innerHTML = parts.join(' · ') || 'no data';
 
       if (state.register) {
-        renderKPIs(reg); renderFlow(reg); renderPartyDonut(reg); renderPending(reg); renderMonthChart(reg); renderWashType(reg); renderRewash(reg);
+        renderKPIs(reg); renderFlow(reg); renderPartyDonut(reg); renderPending(reg); renderMonthChart(reg); renderWashType(); renderRewash(reg);
       }
       renderPendingTable(reg, chem);
 
