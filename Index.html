@@ -513,13 +513,38 @@
       border-radius: var(--radius);
       padding: 22px;
       box-shadow: var(--shadow);
-      transition: transform .2s ease, box-shadow .2s ease
+      position: relative;
+      --cardglow: 59, 130, 246;
+      transform-style: preserve-3d;
+      transition: transform .3s cubic-bezier(.2, .8, .25, 1), box-shadow .3s ease, border-color .3s ease;
+    }
+
+    /* cursor-following sheen (premium glow that tracks the pointer) */
+    .card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity .3s ease;
+      background: radial-gradient(circle 220px at var(--mx, 50%) var(--my, 50%), rgba(var(--cardglow), .14), transparent 62%);
     }
 
     .card:hover {
       transform: translateY(-4px);
-      box-shadow: var(--shadow-lift)
+      box-shadow: var(--shadow-lift), 0 12px 34px rgba(var(--cardglow), .16);
+      border-color: rgba(var(--cardglow), .5);
     }
+
+    .card:hover::after { opacity: 1; }
+
+    /* per-KPI accent glow */
+    .kpi.t-blue { --cardglow: 59, 130, 246; }
+    .kpi.t-teal { --cardglow: 20, 184, 166; }
+    .kpi.t-amber { --cardglow: 245, 158, 11; }
+    .kpi.t-rose { --cardglow: 244, 63, 94; }
 
     .card-title {
       font-size: 14.5px;
@@ -960,6 +985,39 @@
 
     .hidden {
       display: none !important
+    }
+
+    /* PAGE NAV — Home / Forecasting tabs */
+    .page-nav {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin: -6px auto 26px
+    }
+
+    .pnav-btn {
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--muted);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 9px 22px;
+      cursor: pointer;
+      transition: .18s
+    }
+
+    .pnav-btn:hover {
+      border-color: var(--blue);
+      color: var(--blue)
+    }
+
+    .pnav-btn.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(37, 99, 235, .28)
     }
 
     /* BOOT / LIVE-LOADING SCREEN */
@@ -1449,6 +1507,12 @@
       <div class="divider"></div>
     </header>
 
+    <!-- PAGE NAV — appears once data is loaded; toggles between the Home dashboard and Forecasting -->
+    <div class="page-nav hidden" id="pageNav">
+      <button class="pnav-btn active" id="navHome" type="button">Home</button>
+      <button class="pnav-btn" id="navForecast" type="button">Forecasting</button>
+    </div>
+
     <!-- BOOT / LIVE-LOADING SCREEN (shown first; the upload screen below is fallback only) -->
     <div id="bootScreen">
       <div class="boot-card">
@@ -1676,6 +1740,58 @@
         </div>
       </div>
     </div>
+
+    <!-- FORECASTING PAGE -->
+    <div id="forecastPage" class="hidden">
+      <div class="action-row">
+        <span class="muted-counter">Projections use full historical data and are independent of the Home page filters.</span>
+      </div>
+
+      <div class="grid g3 mb" id="forecastKPIs"></div>
+
+      <div class="section-label">Order volume forecast</div>
+      <div class="card fade-up mb">
+        <div class="card-head">
+          <div class="card-title">Incoming pieces — history &amp; next-month projection</div>
+          <div class="card-sub" id="orderForecastSub">Monthly totals across all parties</div>
+        </div>
+        <div id="orderForecastChart" class="chart"></div>
+      </div>
+      <div class="card fade-up mb">
+        <div class="card-head">
+          <div class="card-title">Per-party projection</div>
+          <div class="card-sub">Parties with at least two months of history</div>
+        </div>
+        <div class="tbl-wrap scroll" id="partyForecastTbl"></div>
+      </div>
+
+      <div class="section-label">Chemical consumption forecast</div>
+      <div class="card fade-up mb">
+        <div class="card-head">
+          <div class="card-title">Projected chemical demand — next month</div>
+          <div class="card-sub" id="chemForecastSub">Top chemicals by projected quantity</div>
+        </div>
+        <div id="chemForecastChart" class="chart"></div>
+      </div>
+
+      <div class="section-label">Turnaround forecast</div>
+      <div class="grid g2 mb">
+        <div class="card fade-up">
+          <div class="card-head">
+            <div class="card-title">Avg turnaround by wash type</div>
+            <div class="card-sub">Days from IN to OUT, completed lots only</div>
+          </div>
+          <div id="turnaroundChart" class="chart-sm"></div>
+        </div>
+        <div class="card fade-up">
+          <div class="card-head">
+            <div class="card-title">Pending lots — predicted dispatch</div>
+            <div class="card-sub">Estimated from historical wash-type turnaround</div>
+          </div>
+          <div class="tbl-wrap scroll" id="pendingForecastTbl" style="max-height:300px"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -1715,7 +1831,8 @@
       filters: { month: '', wash: '', party: '', lot: '', from: '', to: '', proc: '' },
       flowView: 'all',   // chart-local month picker
       pendSearch: '',    // pending-table search
-      tableFilter: 'all' // 'all' or 'pending'
+      tableFilter: 'all', // 'all' or 'pending'
+      page: 'home'       // 'home' or 'forecast'
     };
 
     /* ============================================================
@@ -2546,7 +2663,14 @@
     <div class="meta-chip"><span>Pieces</span><b>${fmt(c.pcs)}</b></div>
     <div class="meta-chip"><span>Chemicals</span><b>${c.chems.length}</b></div></div>`;
       if (!c.chems.length) { body.innerHTML = meta + '<div class="empty">No chemicals recorded for this lot.</div>'; return; }
-      body.innerHTML = meta + '<div id="drillChart" style="width:100%;height:300px"></div>';
+      // Bar height must scale with how many chemicals are in this lot — a fixed 300px div
+      // squashed every row once a lot had 15-20+ chemicals, so labels and value text overlapped
+      // into unreadable garbage (e.g. a lone "kg" floating between two bars).
+      const h = Math.max(280, c.chems.length * 30 + 50);
+      const cap = 640; // beyond this, scroll internally instead of ballooning the card
+      body.innerHTML = meta + (h > cap
+        ? `<div style="max-height:${cap}px;overflow-y:auto"><div id="drillChart" style="width:100%;height:${h}px"></div></div>`
+        : `<div id="drillChart" style="width:100%;height:${h}px"></div>`);
       const names = c.chems.map(x => x.name).reverse(); const vals = c.chems.map(x => x.val).reverse();
       const units = c.chems.map(x => x.unit).reverse(); const cols = gradient(PAL.teal, PAL.blue, names.length);
       Plotly.newPlot('drillChart', [{
@@ -2557,7 +2681,266 @@
         hovertemplate: '%{y}<br>%{customdata}<extra></extra>', hoverlabel: HL,
         cliponaxis: false
       }],
-        baseLayout({ margin: { l: 150, r: 50, t: 8, b: 34 }, xaxis: { gridcolor: GRID, tickfont: FONT }, yaxis: { automargin: true, tickfont: { family: 'Poppins', size: 11 }, ticksuffix: '  ' } }), CONFIG);
+        baseLayout({ height: h, margin: { l: 150, r: 50, t: 8, b: 34 }, xaxis: { gridcolor: GRID, tickfont: FONT }, yaxis: { automargin: true, tickfont: { family: 'Poppins', size: 11 }, ticksuffix: '  ' } }), CONFIG);
+    }
+
+    /* ---------- forecasting ---------- */
+    // Simple least-squares trend over however many monthly data points exist. With <2 points
+    // there's no trend to fit, so the "projection" is just the latest known value.
+    function linregPredict(vals) {
+      const n = vals.length;
+      if (n === 0) return { next: 0, trend: false };
+      if (n === 1) return { next: vals[0], trend: false };
+      const xs = vals.map((_, i) => i);
+      const sumX = xs.reduce((a, b) => a + b, 0), sumY = vals.reduce((a, b) => a + b, 0);
+      const sumXY = xs.reduce((a, x, i) => a + x * vals[i], 0);
+      const sumXX = xs.reduce((a, x) => a + x * x, 0);
+      const denom = n * sumXX - sumX * sumX;
+      const slope = denom === 0 ? 0 : (n * sumXY - sumX * sumY) / denom;
+      const intercept = (sumY - slope * sumX) / n;
+      return { next: Math.max(0, slope * n + intercept), trend: true };
+    }
+    function nextMonthLabel(label) {
+      const parts = (label || '').split(' ');
+      const year = parseInt(parts[parts.length - 1]);
+      const idx = MONTH_NAMES.indexOf(parts.slice(0, -1).join(' '));
+      if (idx === -1 || isNaN(year)) return 'Next month';
+      return idx === 11 ? MONTH_NAMES[0] + ' ' + (year + 1) : MONTH_NAMES[idx + 1] + ' ' + year;
+    }
+    // Chronological monthly totals from register rows, keyed off r.month (already includes year).
+    function monthlySeries(rows, valueFn) {
+      const byMonth = {};
+      rows.forEach(r => { if (!r.real || !r.month) return; byMonth[r.month] = (byMonth[r.month] || 0) + valueFn(r); });
+      const months = Object.keys(byMonth).sort((a, b) => monthSortKey(a) - monthSortKey(b));
+      return { months, vals: months.map(m => byMonth[m]) };
+    }
+
+    function renderOrderForecast() {
+      const gd = document.getElementById('orderForecastChart');
+      const reg = state.register || [];
+      const { months, vals } = monthlySeries(reg, r => r.inP);
+      if (!months.length) { gd.innerHTML = '<div class="empty">No register data to forecast from.</div>'; return null; }
+      const { next, trend } = linregPredict(vals);
+      const xVals = [...months, nextMonthLabel(months[months.length - 1]) + ' (projected)'];
+      const yVals = [...vals, next];
+      const cols = months.map(() => PAL.blue).concat([PAL.blue]);
+      const opacity = months.map(() => 1).concat([0.35]);
+
+      gd.innerHTML = '';
+      Plotly.newPlot(gd, [{
+        x: xVals, y: yVals, type: 'bar', marker: { color: cols, opacity: opacity },
+        text: yVals.map(v => fmt(v)), textposition: 'auto',
+        insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
+        outsidetextfont: { family: 'Poppins', size: 11, color: AXIS_INK },
+        hovertemplate: '%{x}<br>%{y:,.0f} pcs<extra></extra>', hoverlabel: HL, cliponaxis: false
+      }], baseLayout({
+        margin: { l: 55, r: 18, t: 16, b: 52 },
+        xaxis: { tickfont: FONT, gridcolor: GRID, tickangle: -12 },
+        yaxis: { gridcolor: GRID, tickfont: FONT, title: { text: 'pieces IN', font: FONT } }
+      }), CONFIG);
+
+      const sub = document.getElementById('orderForecastSub');
+      if (sub) {
+        sub.textContent = trend
+          ? `Monthly totals across all parties · trend projected from ${months.length} month${months.length !== 1 ? 's' : ''} of history`
+          : `Only one month of history so far — projection is a flat estimate, not yet a trend`;
+      }
+      return next;
+    }
+
+    function renderPartyForecastTable() {
+      const wrap = document.getElementById('partyForecastTbl');
+      const reg = state.register || [];
+      const parties = [...new Set(reg.filter(r => r.real).map(r => r.party))];
+      const rows = [];
+      parties.forEach(p => {
+        const { months, vals } = monthlySeries(reg.filter(r => r.party === p), r => r.inP);
+        if (months.length < 2) return; // need at least two months to project a trend
+        const { next } = linregPredict(vals);
+        const last = vals[vals.length - 1];
+        const pct = last ? Math.round((next - last) / last * 100) : 0;
+        rows.push({ party: p, months: months.length, last, next, pct });
+      });
+      if (!rows.length) { wrap.innerHTML = '<div class="empty">Not enough monthly history yet — need at least two months of data per party.</div>'; return; }
+      rows.sort((a, b) => b.next - a.next);
+      const body = rows.map(r => `<tr>
+        <td>${r.party}</td>
+        <td>${fmt(r.last)} pcs</td>
+        <td><b>${fmt(r.next)} pcs</b></td>
+        <td>${r.pct >= 0 ? `<span class="tag tag-green">+${r.pct}%</span>` : `<span class="tag tag-rose">${r.pct}%</span>`}</td>
+      </tr>`).join('');
+      wrap.innerHTML = `<table><thead><tr><th>Party</th><th>Last month IN</th><th>Projected next month</th><th>Trend</th></tr></thead><tbody>${body}</tbody></table>`;
+    }
+
+    function renderChemForecast() {
+      const gd = document.getElementById('chemForecastChart');
+      if (!state.register || !state.chem) { gd.innerHTML = '<div class="empty">Upload both the register and the chemical sheet to forecast chemical demand.</div>'; return null; }
+      // A chem-sheet lot has no date of its own — borrow the month from the first matching register row.
+      const monthByLot = {};
+      state.register.forEach(r => { if (r.real && r.month && !monthByLot[r.lot]) monthByLot[r.lot] = r.month; });
+
+      const chemMonthly = {}, unitByChem = {};
+      state.chem.forEach(c => {
+        const month = monthByLot[c.lot];
+        if (!month) return;
+        c.chems.forEach(ch => {
+          chemMonthly[ch.name] = chemMonthly[ch.name] || {};
+          chemMonthly[ch.name][month] = (chemMonthly[ch.name][month] || 0) + ch.val;
+          unitByChem[ch.name] = ch.unit;
+        });
+      });
+
+      const names = Object.keys(chemMonthly);
+      if (!names.length) { gd.innerHTML = '<div class="empty">No chemical usage could be matched to a month yet — check that lot numbers line up between the two sheets.</div>'; return null; }
+
+      let projections = names.map(name => {
+        const monthMap = chemMonthly[name];
+        const months = Object.keys(monthMap).sort((a, b) => monthSortKey(a) - monthSortKey(b));
+        const { next } = linregPredict(months.map(m => monthMap[m]));
+        return { name, next, unit: unitByChem[name], months: months.length };
+      }).filter(p => p.next > 0).sort((a, b) => b.next - a.next).slice(0, 12).reverse();
+
+      if (!projections.length) { gd.innerHTML = '<div class="empty">No projected chemical demand — all recent usage trended to zero.</div>'; return null; }
+
+      const labels = projections.map(p => p.name.length > 22 ? p.name.slice(0, 21) + '…' : p.name);
+      const vals = projections.map(p => p.next);
+      const cols = gradient(PAL.amber, PAL.rose, projections.length);
+      const txt = projections.map(p => fmtChem(p.next, p.unit));
+
+      gd.innerHTML = '';
+      Plotly.newPlot(gd, [{
+        x: vals, y: labels, type: 'bar', orientation: 'h', marker: { color: cols },
+        text: txt, textposition: 'auto',
+        insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
+        outsidetextfont: { family: 'Poppins', size: 11, color: AXIS_INK },
+        customdata: projections.map(p => [fmtChem(p.next, p.unit), p.name, p.months]),
+        hovertemplate: '<b>%{customdata[1]}</b><br>Projected: %{customdata[0]}<br>%{customdata[2]} month(s) of history<extra></extra>',
+        hoverlabel: HL, cliponaxis: false
+      }], baseLayout({
+        margin: { l: 150, r: 64, t: 10, b: 36 },
+        xaxis: { gridcolor: GRID, title: { text: 'projected quantity — next month', font: FONT }, tickfont: FONT },
+        yaxis: { automargin: true, tickfont: { family: 'Poppins', size: 11 }, ticksuffix: '  ' }
+      }), CONFIG);
+
+      const sub = document.getElementById('chemForecastSub');
+      if (sub) sub.textContent = `Top ${projections.length} chemical${projections.length !== 1 ? 's' : ''} by projected next-month quantity`;
+      return projections[projections.length - 1]; // largest projection (list is ascending)
+    }
+
+    function renderTurnaroundForecast() {
+      const gd = document.getElementById('turnaroundChart');
+      const reg = state.register || [];
+      const completed = reg.filter(r => r.real && r.inDate && r.outDate);
+      const byWash = {};
+      completed.forEach(r => {
+        const days = Math.round((r.outDate - r.inDate) / 86400000);
+        if (days < 0) return;
+        byWash[r.wash] = byWash[r.wash] || { total: 0, count: 0 };
+        byWash[r.wash].total += days; byWash[r.wash].count++;
+      });
+      const washNames = Object.keys(byWash);
+      if (!washNames.length) {
+        gd.innerHTML = '<div class="empty">No completed lots (with both IN and OUT dates) to compute turnaround from.</div>';
+      } else {
+        washNames.sort((a, b) => (byWash[a].total / byWash[a].count) - (byWash[b].total / byWash[b].count));
+        const avgs = washNames.map(w => Math.round(byWash[w].total / byWash[w].count * 10) / 10);
+        const cols = gradient(PAL.teal, PAL.violet, washNames.length);
+        gd.innerHTML = '';
+        Plotly.newPlot(gd, [{
+          x: avgs, y: washNames, type: 'bar', orientation: 'h', marker: { color: cols },
+          text: avgs.map((v, i) => `${v}d · ${byWash[washNames[i]].count} lots`), textposition: 'auto',
+          insidetextfont: { family: 'Poppins', size: 10, color: '#ffffff' },
+          outsidetextfont: { family: 'Poppins', size: 10, color: AXIS_INK },
+          hovertemplate: '<b>%{y}</b><br>avg %{x} days<extra></extra>', hoverlabel: HL, cliponaxis: false
+        }], baseLayout({
+          margin: { l: 110, r: 40, t: 8, b: 32 },
+          xaxis: { gridcolor: GRID, title: { text: 'avg days', font: FONT }, tickfont: FONT },
+          yaxis: { automargin: true, tickfont: { family: 'Poppins', size: 11 } }
+        }), CONFIG);
+      }
+
+      const overallAvg = completed.length
+        ? completed.reduce((a, r) => a + Math.max(0, Math.round((r.outDate - r.inDate) / 86400000)), 0) / completed.length
+        : null;
+
+      const pending = reg.filter(r => r.real && r.isPending && r.inDate && !r.outDate);
+      const wrap = document.getElementById('pendingForecastTbl');
+      if (!pending.length) {
+        wrap.innerHTML = '<div class="empty">No pending lots (awaiting their first dispatch) to forecast.</div>';
+      } else {
+        const rows = pending.map(r => {
+          const washStat = byWash[r.wash];
+          const washAvg = washStat && washStat.count >= 2 ? washStat.total / washStat.count : overallAvg;
+          const daysSoFar = Math.round((Date.now() - r.inDate) / 86400000);
+          let etaTxt = '—', overdue = false;
+          if (washAvg != null) {
+            const eta = new Date(r.inDate.getTime() + Math.round(washAvg) * 86400000);
+            etaTxt = fmtDate(eta);
+            overdue = daysSoFar > washAvg * 1.25;
+          }
+          return { lot: r.lot, party: r.party, wash: r.wash, daysSoFar, etaTxt, overdue };
+        }).sort((a, b) => b.daysSoFar - a.daysSoFar);
+        const body = rows.map(r => `<tr>
+          <td>${r.lot}</td><td>${r.party}</td><td>${r.wash}</td>
+          <td>${r.daysSoFar}d</td>
+          <td>${r.etaTxt}</td>
+          <td>${r.overdue ? '<span class="tag tag-rose">Overdue</span>' : '<span class="tag tag-green">On track</span>'}</td>
+        </tr>`).join('');
+        wrap.innerHTML = `<table><thead><tr><th>Lot</th><th>Party</th><th>Wash</th><th>In factory</th><th>Predicted dispatch</th><th>Status</th></tr></thead><tbody>${body}</tbody></table>`;
+      }
+      return overallAvg;
+    }
+
+    function renderForecastKPIs(nextIn, topChem, avgTurnaround) {
+      const cards = [
+        {
+          t: 'blue', label: 'Next Month Projected IN', val: nextIn != null ? fmt(nextIn) + ' pcs' : '—',
+          meta: 'trend-based projection',
+          ic: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>'
+        },
+        {
+          t: 'amber', label: 'Top Projected Chemical Need', val: topChem ? topChem.name : '—',
+          meta: topChem ? fmtChem(topChem.next, topChem.unit) + ' next month' : 'no data yet',
+          ic: '<path d="M9 3h6M10 3v5.79a2 2 0 0 1-.4 1.2L5.4 17.4A2 2 0 0 0 7 20.8h10a2 2 0 0 0 1.6-3.4L14 9.99a2 2 0 0 1-.4-1.2V3"/>'
+        },
+        {
+          t: 'teal', label: 'Avg Turnaround', val: avgTurnaround != null ? (Math.round(avgTurnaround * 10) / 10) + ' days' : '—',
+          meta: 'IN to OUT, completed lots',
+          ic: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'
+        }
+      ];
+      document.getElementById('forecastKPIs').innerHTML = cards.map((c, i) => `
+    <div class="card kpi t-${c.t} fade-up" style="animation-delay:${i * .06}s">
+      <div class="kpi-top"><span class="kpi-label">${c.label}</span>
+        <span class="kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${c.ic}</svg></span></div>
+      <div class="kpi-val" style="font-size:22px">${c.val}</div><div class="kpi-meta">${c.meta}</div>
+    </div>`).join('');
+    }
+
+    function renderForecastPage() {
+      if (!state.register && !state.chem) {
+        ['forecastKPIs'].forEach(id => document.getElementById(id).innerHTML = '');
+        document.getElementById('orderForecastChart').innerHTML = '<div class="empty">Load data on the Home page first.</div>';
+        document.getElementById('chemForecastChart').innerHTML = '<div class="empty">Load data on the Home page first.</div>';
+        document.getElementById('turnaroundChart').innerHTML = '<div class="empty">Load data on the Home page first.</div>';
+        document.getElementById('partyForecastTbl').innerHTML = '';
+        document.getElementById('pendingForecastTbl').innerHTML = '';
+        return;
+      }
+      const nextIn = renderOrderForecast();
+      renderPartyForecastTable();
+      const topChem = renderChemForecast();
+      const avgTurnaround = renderTurnaroundForecast();
+      renderForecastKPIs(nextIn, topChem, avgTurnaround);
+    }
+
+    function switchPage(page) {
+      state.page = page;
+      document.getElementById('navHome').classList.toggle('active', page === 'home');
+      document.getElementById('navForecast').classList.toggle('active', page === 'forecast');
+      document.getElementById('dashboard').classList.toggle('hidden', page !== 'home');
+      document.getElementById('forecastPage').classList.toggle('hidden', page !== 'forecast');
+      if (page === 'forecast') renderForecastPage();
     }
 
     /* ---------- orchestration ---------- */
@@ -2604,6 +2987,10 @@
       document.getElementById('bootScreen').classList.add('hidden');
       document.getElementById('uploadScreen').classList.add('hidden');
       document.getElementById('dashboard').classList.remove('hidden');
+      document.getElementById('pageNav').classList.remove('hidden');
+      document.getElementById('navHome').onclick = () => switchPage('home');
+      document.getElementById('navForecast').onclick = () => switchPage('forecast');
+      switchPage(state.page || 'home');
       buildFilterOptions();
 
       // default: show all months (no month filter)
@@ -2865,6 +3252,30 @@
     (function initTheme() {
       let saved; try { saved = localStorage.getItem('ec_theme'); } catch (e) { }
       applyTheme(saved === 'dark');
+    })();
+
+    // ----- premium card hover: cursor-following 3D tilt + zoom + glow sheen -----
+    // Chart/table cards get lift+glow only (no tilt/scale) so Plotly hover stays pixel-accurate.
+    (function cardFx() {
+      let active = null;
+      const isFlat = card => !card.classList.contains('kpi') &&
+        !!card.querySelector('.chart, .chart-sm, .tbl-wrap, canvas');
+      function reset(card) { card.style.transform = ''; card.style.removeProperty('--mx'); card.style.removeProperty('--my'); }
+      document.addEventListener('pointermove', e => {
+        const card = e.target.closest ? e.target.closest('.card') : null;
+        if (card !== active) { if (active) reset(active); active = card; }
+        if (!card) return;
+        const r = card.getBoundingClientRect();
+        const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+        card.style.setProperty('--mx', (px * 100).toFixed(1) + '%');
+        card.style.setProperty('--my', (py * 100).toFixed(1) + '%');
+        if (!isFlat(card)) {
+          const rx = (0.5 - py) * 6.5, ry = (px - 0.5) * 8.5;
+          card.style.transform =
+            `perspective(950px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) translateY(-6px) scale(1.035)`;
+        }
+      }, { passive: true });
+      document.addEventListener('pointerleave', () => { if (active) { reset(active); active = null; } }, true);
     })();
 
     // Export PDF = browser print → "Save as PDF"
