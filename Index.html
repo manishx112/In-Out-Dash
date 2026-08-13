@@ -485,6 +485,102 @@
       }
     }
 
+    .status.live .sd {
+      background: var(--green)
+    }
+
+    .status.cached {
+      color: var(--amber)
+    }
+
+    .status.cached .sd {
+      background: var(--amber)
+    }
+
+    .status.offline {
+      color: var(--rose)
+    }
+
+    .status.offline .sd {
+      background: var(--rose)
+    }
+
+    /* per-stream chips — make the two parallel fetches visible while they run */
+    .srcpill {
+      gap: 7px;
+      font-size: 11.5px;
+      padding: 7px 13px
+    }
+
+    .srcpill .sdot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--soft);
+      flex: none
+    }
+
+    .srcpill.loading {
+      color: var(--blue);
+      border-color: rgba(37, 99, 235, .38)
+    }
+
+    .srcpill.loading .sdot {
+      background: var(--blue);
+      animation: blink .7s infinite
+    }
+
+    .srcpill.ok {
+      color: var(--green)
+    }
+
+    .srcpill.ok .sdot {
+      background: var(--green)
+    }
+
+    .srcpill.cached {
+      color: var(--amber)
+    }
+
+    .srcpill.cached .sdot {
+      background: var(--amber)
+    }
+
+    .srcpill.err {
+      color: var(--rose)
+    }
+
+    .srcpill.err .sdot {
+      background: var(--rose)
+    }
+
+    /* top-of-page network progress bar */
+    #netBar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      width: 0;
+      z-index: 2000;
+      background: linear-gradient(90deg, var(--blue), var(--teal));
+      box-shadow: 0 0 12px rgba(37, 99, 235, .55);
+      opacity: 0;
+      pointer-events: none;
+      transition: width .35s cubic-bezier(.25, .8, .3, 1), opacity .3s ease
+    }
+
+    #netBar.on {
+      opacity: 1
+    }
+
+    @media print {
+      #netBar { display: none }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      .srcpill.loading .sdot { animation: none }
+    }
+
     /* GRID + CARDS */
     .grid {
       display: grid;
@@ -1493,6 +1589,7 @@
 </head>
 
 <body>
+  <div id="netBar"></div>
   <button id="themeBtn" title="Toggle dark / light mode" aria-label="Toggle theme">
     <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
@@ -1577,6 +1674,8 @@
       <div class="filterbar fade-up">
         <div class="fbar-row">
           <span class="pill"><span class="livedot"></span><span id="recCount">—</span></span>
+          <span class="pill srcpill hidden" id="srcReg"><span class="sdot"></span><span class="stxt">Register</span></span>
+          <span class="pill srcpill hidden" id="srcChem"><span class="sdot"></span><span class="stxt">Chemical</span></span>
           <select id="fMonth" class="fselect">
             <option value="">All Months</option>
           </select>
@@ -1832,7 +1931,18 @@
       flowView: 'all',   // chart-local month picker
       pendSearch: '',    // pending-table search
       tableFilter: 'all', // 'all' or 'pending'
-      page: 'home'       // 'home' or 'forecast'
+      page: 'home',      // 'home' or 'forecast'
+      booted: false      // true once the dashboard surface has been built at least once
+    };
+
+    /* Live-connection state, surfaced in the filter bar so the user can always tell
+       whether they are looking at live, saved, or uploaded numbers. */
+    const net = {
+      reg: 'idle', chem: 'idle',  // idle | loading | ok | err | cached
+      mode: 'cache',              // cache | live | file | sample
+      lastLive: null,             // ms timestamp of the last successful live fetch
+      cachedAt: null,             // ms timestamp the shown saved copy was written
+      offline: false, inflight: 0, note: ''
     };
 
     /* ============================================================
@@ -1844,16 +1954,17 @@
        more stable than the echo URL, which can expire per deploy.
        ============================================================ */
     const API = {
-      // Register (IN/OUT lot data) — this deploy includes the "Process" (wash-type) column.
-      register: 'https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnTEuWx8QQ-Y8PQ19YraB9pcGUoHberjrelytt4f8GO5C7PmdZu3ol6QffJGSvEt3ypSktdDzDIijkRm71-NE5L6To0rHHlx4LUUhTy614p-I82A15dGMeBzGtHrp6jV4oY4LfmEsb4mmWMtKUJriTZJDhb1uW080D0CSNYoiQcEM8dfys9CLlxgamstvBhaYJsEBici7Iwn-IDtqXMW5glJUtf9PT299xcpDKE7M92JvwQKdoRs1M108Pp3svmVfsGvYzLibPwFTFASWIVsEHxPG7otkg&lib=MyXUXAY_ykK5gkoCS7YHaU6im3LrgviIW',
+      // Register (IN/OUT lot data) — /exec deploy, includes the "Process" (wash-type) column.
+      register: 'https://script.google.com/macros/s/AKfycbynx7sYB5MS5WdxLYRzzG92pmSOx9ibyV3TBmFxp7iZUk1uMu8miUGouh1JBbXFsE-zVQ/exec',
       // Chemical-usage sheet ("Lot No.", "PCS", "Type", + chemical-name columns).
       chem: 'https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnTucmiV7sdOjUXFghZcGKY4WlcCcgohmdkAlVUwBt9s_FRJReb1v1jP5w_FPNNsSlJbkH9GG4etSxDVbNiG3lVhdw1NtvpJ1lmO7JGAOd60lU2hcD7YzVxyG160n2w0j_UKcos96UV4srRiRlZHLhtp9mZpRNvuNHGyJ0iT2hwM1SxECrDGiJygL2fQGbMX9YURZPgTu0G9fVwhotDzftnYD9aHeiQcyAxVDN7ykCfOOaga_Dgwl3pULgiCZ9xsci4YCsTGrl_-_JVUP7pre_79gEwLqg&lib=MMiyvb2ofX7xjViTU3ghjy1N9GsRUch3M'
     };
-    // (previous register /exec URL — pre-"Process"-column deploy, kept as a fallback:)
-    // 'https://script.google.com/macros/s/AKfycby_16GA1nN2ULKsS9Q-HgOEF0dSL_sxo8zdfiVv3y0w49Vt-ZDp-U4DhMB-Mo7pYMCAdA/exec'
-    // (alt register / echo URL, if the /exec one ever stops responding:)
-    // 'https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnS88l1BVim3KcLAwSCIWDaOIhUv4dkkccqmURtGhLNg4aLzmiTO85Bjq6AwRe39BtchSZpwCq6EJLENkmUvrpb4MCl4extMITBYoNZBpFMpEFcQELfjpen2rUwHBRGdWVkNbgp2ZtF6EPk8UCJBAEqaPHB054B8AIOOkKp5TlVo2njF488GJR2sRtgbtS_Se0kJVne9lAxsH48BcMO0nrmycDN1k9loJzo32I7xw2nwCTr2JRoalML-9g-6j_VaDuJS5KKZrK1ogjtYlTof8dg4naTfLQ&lib=MyXUXAY_ykK5gkoCS7YHaU6im3LrgviIW'
-    const AUTO_REFRESH_MS = 0; // e.g. 300000 for auto-refresh every 5 min; 0 = off
+    // (previous register echo URL — superseded by the /exec deploy above, kept as a fallback:)
+    // 'https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnTEuWx8QQ-Y8PQ19YraB9pcGUoHberjrelytt4f8GO5C7PmdZu3ol6QffJGSvEt3ypSktdDzDIijkRm71-NE5L6To0rHHlx4LUUhTy614p-I82A15dGMeBzGtHrp6jV4oY4LfmEsb4mmWMtKUJriTZJDhb1uW080D0CSNYoiQcEM8dfys9CLlxgamstvBhaYJsEBici7Iwn-IDtqXMW5glJUtf9PT299xcpDKE7M92JvwQKdoRs1M108Pp3svmVfsGvYzLibPwFTFASWIVsEHxPG7otkg&lib=MyXUXAY_ykK5gkoCS7YHaU6im3LrgviIW'
+    const AUTO_REFRESH_MS = 300000; // background re-sync every 5 min; 0 = off
+    const STALE_MS = 90000;         // on tab focus, re-sync if the data is older than this
+    const FETCH_TIMEOUT_MS = 22000; // per attempt
+    const FETCH_RETRIES = 3;        // attempts per endpoint before giving up (with backoff)
     let autoTimer = null;
 
     /* ---------- helpers ---------- */
@@ -1894,17 +2005,27 @@
       'BACK WISHKAR': 'Back Wishkar', 'DAMAGE': 'Damage', 'HEAVY DAMAGE': 'Heavy Damage'
     };
 
-    /* date parsing: "20-5-2026" or "20-05-2026" or "2026-05-20" or ISO "2026-05-20T00:00:00.000Z" (from API) */
+    /* Date parsing. Every shape the two sheets have ever produced must land on the same
+       calendar day, because month bucketing, the date-range filter and turnaround all
+       key off it. Supported:
+         "20-5-2026" / "20/05/2026"            — hand-typed register cells
+         "2026-05-20"                          — ISO date
+         "2026-05-20T00:00:00.000Z"            — ISO datetime (echo deploy)
+         "20/05/2026 05:30:00"                 — /exec deploy (sheet date rendered in IST)
+       In every case only the printed day/month/year is used and any clock time is
+       discarded, so a UTC-midnight timestamp can't roll the day backwards in IST. */
     function parseDate(s) {
       if (!s) return null;
+      if (s instanceof Date) return isNaN(s.getTime()) ? null : s;
       s = String(s).trim();
-      // ISO datetime from the live API — read the date part as a LOCAL date so the
-      // UTC-midnight "Z" doesn't shift the day backwards in IST.
+      if (!s) return null;
       let iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})T/);
       if (iso) { const d = new Date(+iso[1], +iso[2] - 1, +iso[3]); return isNaN(d) ? null : d; }
-      let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      // strip a trailing clock time ("… 05:30:00", "… 5:30 PM") before matching the date
+      s = s.replace(/[ T]\d{1,2}:\d{2}(:\d{2})?(\.\d+)?\s*([aApP]\.?[mM]\.?)?$/, '').trim();
+      let m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/);
       if (m) { const d = new Date(+m[1], +m[2] - 1, +m[3]); return isNaN(d) ? null : d; }
-      m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+      m = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/);   // day-first (DD/MM/YYYY)
       if (m) { const d = new Date(+m[3], +m[2] - 1, +m[1]); return isNaN(d) ? null : d; }
       return null;
     }
@@ -3170,7 +3291,8 @@
         tblFil.onchange = e => { state.tableFilter = e.target.value; renderPendingTable(getFiltered(), filteredLots()); };
       }
 
-      renderAll(); markStatus(true);
+      renderAll();
+      renderNetStatus();
     }
 
     function filterTableAndScroll(view) {
@@ -3189,21 +3311,69 @@
         }, 100);
       }
     }
-    function markStatus(initial, note) {
-      const el = document.getElementById('statusTxt');
-      const t = new Date(); const hh = t.getHours() % 12 || 12; const mm = String(t.getMinutes()).padStart(2, '0'); const ap = t.getHours() < 12 ? 'am' : 'pm';
-      el.className = 'status fresh';
-      el.innerHTML = `<span class="sd"></span> ${initial ? 'Loaded' : 'Refreshed'} at ${hh}:${mm} ${ap}` +
-        (note ? ` · <b style="color:var(--amber)">${note}</b>` : '');
+    /* applyData() is the ONE entry point for new rows from any source — live API, saved
+       cache, uploaded file or sample. Two rules make it safe to call at any moment:
+         1. a null slice is never destructive — it keeps whatever is already in state,
+            so a failed chemical fetch can't wipe a good register (and vice versa);
+         2. on a background update the user's filters survive; only values the new data
+            can no longer satisfy are dropped (see reconcileFilters). */
+    function applyData(regRows, chemRows, opts = {}) {
+      if (regRows) state.register = ingestRegister(regRows);
+      if (chemRows) state.chem = ingestChem(chemRows);
+      if (!state.register && !state.chem) return false;
+      enrichWashFromChem();
+
+      const firstPaint = !state.booted;
+      if (opts.resetFilters || firstPaint) {
+        state.filters = { month: '', wash: '', party: '', lot: '', from: '', to: '', proc: '' };
+        state.flowView = 'all'; state.pendSearch = ''; state.tableFilter = 'all';
+      }
+
+      if (firstPaint) {
+        showDashboard();
+        state.booted = true;
+      } else {
+        // make the dashboard the visible surface again (e.g. returning from "upload new files")
+        document.getElementById('bootScreen').classList.add('hidden');
+        document.getElementById('uploadScreen').classList.add('hidden');
+        document.getElementById('pageNav').classList.remove('hidden');
+        document.getElementById(state.page === 'forecast' ? 'forecastPage' : 'dashboard').classList.remove('hidden');
+        buildFilterOptions();
+        reconcileFilters();
+        updateFilterOptions();
+        syncFilterControls();
+        renderAll();
+        if (state.page === 'forecast') renderForecastPage();
+      }
+      return true;
     }
 
+    // Fresh rows may no longer contain the month/party/lot the user had selected. Clear
+    // just those keys so a background refresh never lands the user on an empty screen.
+    function reconcileFilters() {
+      const reg = state.register || [];
+      const stillThere = (key, val) => {
+        if (!val) return true;
+        if (key === 'month') return reg.some(r => r.month === val || r.outMonth === val);
+        if (key === 'wash') return reg.some(r => r.real && r.wash === val);
+        if (key === 'party') return reg.some(r => r.real && r.party === val);
+        if (key === 'lot') return reg.some(r => r.real && lotMatch(r.lot, val));
+        if (key === 'proc') return reg.some(r => r.proc && r.proc[val]);
+        return true;
+      };
+      const dropped = [];
+      ['month', 'wash', 'party', 'lot', 'proc'].forEach(k => {
+        if (!stillThere(k, state.filters[k])) { dropped.push(k); state.filters[k] = ''; }
+      });
+      if (dropped.length) net.note = dropped.join(' + ') + ' filter cleared (gone from the new data)';
+    }
+
+    // Upload / sample path — always a clean slate.
     function loadData(regRows, chemRows) {
-      state.filters = { month: '', wash: '', party: '', lot: '', from: '', to: '', proc: '' };
-      state.flowView = 'all'; state.pendSearch = ''; state.tableFilter = 'all';
-      state.register = regRows ? ingestRegister(regRows) : state.register;
-      state.chem = chemRows ? ingestChem(chemRows) : state.chem;
-      enrichWashFromChem();
-      showDashboard();
+      net.mode = (regRows === SAMPLE_REGISTER || chemRows === SAMPLE_CHEM) ? 'sample' : 'file';
+      net.note = '';
+      applyData(regRows, chemRows, { resetFilters: true });
+      renderNetStatus();
     }
 
     /* Fallback only: if a row's "Process" column was blank (wash === "Other"),
@@ -3246,89 +3416,258 @@
       box.innerHTML =
         '<div style="margin-bottom:8px"><b>What failed:</b></div>' + (lines || '<div>No specific error details.</div>') +
         '<div style="margin-top:10px"><b>Likely fixes:</b><br>' +
-        '1. The chemical URL is the <code>/echo</code> form — these <b>expire per deploy</b>. Re-deploy the Apps Script and use the new <code>/exec</code> URL.<br>' +
-        '2. In Apps Script: <b>Deploy → Manage deployments</b>, set access to <b>"Anyone"</b>.<br>' +
+        '1. In Apps Script: <b>Deploy → Manage deployments</b>, set access to <b>"Anyone"</b>.<br>' +
+        '2. The chemical URL is still the <code>/echo</code> form — those <b>expire per deploy</b>. Re-deploy and paste the new <code>/exec</code> URL.<br>' +
         '3. Open this dashboard from a real <b>https://</b> URL (Netlify), not <code>file://</code>.<br>' +
-        '4. Open the API URLs directly in a new tab to confirm they return JSON.</div>';
+        '4. Open the API URLs directly in a new tab to confirm they return JSON.<br>' +
+        '5. Once any load succeeds, a saved copy is kept — later outages will show that instead of this screen.</div>';
       box.classList.remove('hidden');
       document.getElementById('bootActions').classList.remove('hidden');
     }
 
+    /* ---------- saved copy ("hold temp data") ----------
+       The last good payload from each endpoint is kept in localStorage, so the next
+       visit paints real numbers on the first frame instead of a spinner, and a dead
+       network / expired deploy degrades to "showing saved data" rather than a blank
+       screen. Raw rows are stored (not the ingested shape) so parsing changes take
+       effect on the next load. */
+    const CACHE_KEY = 'ec_cache_v2';
+    const CACHE_MAX_BYTES = 3500000;   // stay well under the ~5 MB localStorage ceiling
+
+    function cacheRead() {
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return {};
+        const j = JSON.parse(raw);
+        return (j && j.v === 2) ? j : {};
+      } catch (e) { return {}; }
+    }
+    function cacheWrite(slot, rows) {
+      try {
+        const cur = cacheRead();
+        const next = { v: 2, register: cur.register || null, chem: cur.chem || null };
+        next[slot] = { rows, ts: Date.now() };
+        let s = JSON.stringify(next);
+        if (s.length > CACHE_MAX_BYTES) {
+          // too big to hold both slices — keep the one we just fetched
+          const solo = { v: 2, register: null, chem: null };
+          solo[slot] = next[slot];
+          s = JSON.stringify(solo);
+          if (s.length > CACHE_MAX_BYTES) { console.warn('[cache] payload too large, not saved'); return false; }
+        }
+        localStorage.setItem(CACHE_KEY, s);
+        return true;
+      } catch (e) { console.warn('[cache] write skipped:', e && e.message); return false; }
+    }
+
+    /* ---------- connection status UI ---------- */
+    function relTime(ts) {
+      if (!ts) return '';
+      const s = Math.max(0, Math.round((Date.now() - ts) / 1000));
+      if (s < 10) return 'just now';
+      if (s < 60) return s + 's ago';
+      const m = Math.round(s / 60);
+      if (m < 60) return m + ' min ago';
+      const h = Math.round(m / 60);
+      if (h < 24) return h + ' hr ago';
+      return 'on ' + new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    }
+    function setSrc(kind, cls, text) {
+      const el = document.getElementById(kind === 'reg' ? 'srcReg' : 'srcChem');
+      if (!el) return;
+      el.classList.remove('hidden', 'loading', 'ok', 'err', 'cached');
+      if (cls) el.classList.add(cls);
+      el.querySelector('.stxt').textContent = text;
+    }
+    function netStart() {
+      net.inflight++;
+      const b = document.getElementById('netBar'); if (!b) return;
+      b.classList.add('on'); b.style.width = '14%';
+      setTimeout(() => { if (net.inflight) b.style.width = '70%'; }, 240);
+    }
+    function netEnd() {
+      net.inflight = Math.max(0, net.inflight - 1);
+      const b = document.getElementById('netBar'); if (!b || net.inflight) return;
+      b.style.width = '100%';
+      setTimeout(() => { b.classList.remove('on'); setTimeout(() => { b.style.width = '0'; }, 340); }, 260);
+    }
+    function renderNetStatus() {
+      const el = document.getElementById('statusTxt'); if (!el) return;
+      const hasData = !!(state.register || state.chem);
+      let cls = 'fresh', txt;
+
+      if (net.offline) {
+        cls = 'offline';
+        txt = 'Offline · showing saved data' + (net.cachedAt ? ' from ' + relTime(net.cachedAt) : '');
+      } else if (net.inflight) {
+        cls = 'refreshing';
+        txt = hasData
+          ? (net.mode === 'live' ? 'Syncing live data… · showing last update' : 'Syncing live data… · showing saved copy')
+          : 'Connecting to live data…';
+      } else if (net.mode === 'file') {
+        txt = 'Showing uploaded files';
+      } else if (net.mode === 'sample') {
+        cls = 'cached'; txt = 'Showing sample data';
+      } else if (net.lastLive) {
+        const failed = ['reg', 'chem'].filter(k => net[k] === 'err');
+        if (failed.length) {
+          cls = 'cached';
+          txt = 'Live · ' + failed.map(k => SRC[k].label).join(' + ') + ' stream failed, saved copy in use';
+        } else {
+          cls = 'live'; txt = 'Live · updated ' + relTime(net.lastLive);
+        }
+      } else if (hasData) {
+        cls = 'cached';
+        txt = 'Saved data' + (net.cachedAt ? ' from ' + relTime(net.cachedAt) : '') + ' · live fetch unavailable';
+      } else {
+        txt = 'No data yet';
+      }
+
+      el.className = 'status ' + cls;
+      el.innerHTML = '<span class="sd"></span> ' + txt +
+        (net.note ? ' · <b style="color:var(--amber)">' + net.note + '</b>' : '');
+    }
+    // Filter-level feedback shares the status line with the connection state.
+    function markStatus(initial, note) { net.note = note || ''; renderNetStatus(); }
+
+    let statusTimer = null;
+    function startStatusTicker() {
+      if (statusTimer) clearInterval(statusTimer);
+      statusTimer = setInterval(() => { if (!document.hidden && !net.inflight) renderNetStatus(); }, 15000);
+    }
+
+    /* ---------- live API ---------- */
+    const SRC = {
+      reg: { slot: 'register', label: 'Register', url: () => API.register, apply: rows => applyData(rows, null) },
+      chem: { slot: 'chem', label: 'Chemical', url: () => API.chem, apply: rows => applyData(null, rows) }
+    };
+
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    // Apps Script /exec answers via a redirect and is aggressively cached by some proxies —
+    // a unique param per request guarantees we read the sheet as it is right now.
+    function bust(url) { return url + (url.includes('?') ? '&' : '?') + '_ts=' + Date.now(); }
+
     async function fetchJSON(url, label) {
       const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort('timeout'), 25000); // 25s safety
+      const t = setTimeout(() => ctrl.abort('timeout'), FETCH_TIMEOUT_MS);
       try {
-        const res = await fetch(url, { redirect: 'follow', cache: 'no-store', signal: ctrl.signal });
+        const res = await fetch(bust(url), { redirect: 'follow', cache: 'no-store', signal: ctrl.signal });
         if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + res.statusText);
         const txt = await res.text();
         // Apps Script sometimes returns HTML on auth issues — guard against that.
         if (txt.trim().startsWith('<')) throw new Error('Got HTML, not JSON (likely auth/permission issue — share as "Anyone")');
         let j; try { j = JSON.parse(txt); } catch { throw new Error('Invalid JSON in response'); }
-        const arr = Array.isArray(j) ? j : (j.data || []);
-        console.log('[' + label + '] OK · ' + arr.length + ' rows from', url);
+        if (j && j.error) throw new Error('API error: ' + j.error);
+        const arr = Array.isArray(j) ? j : (j && Array.isArray(j.data) ? j.data : null);
+        if (!arr) throw new Error('Response had no row array');
+        // An empty sheet read is treated as a failure so a transient blank never
+        // overwrites good data that is already on screen.
+        if (!arr.length) throw new Error('Endpoint returned 0 rows');
+        console.log('[' + label + '] OK · ' + arr.length + ' rows');
         return arr;
       } catch (e) {
-        // network/CORS failures throw TypeError "Failed to fetch"
         const msg = (e && e.message) ? e.message : String(e);
-        console.error('[' + label + '] FAILED:', msg, '·', url);
         throw new Error(msg + (msg.includes('Failed to fetch') ? ' (likely CORS / network block)' : ''));
       } finally {
         clearTimeout(t);
       }
     }
 
-    function setStatus(cls, msg) {
-      const el = document.getElementById('statusTxt');
-      if (!el) return;
-      el.className = 'status ' + cls;
-      el.innerHTML = '<span class="sd"></span> ' + msg;
+    // Transient Apps Script hiccups (quota blips, cold starts, flaky mobile data) are
+    // common enough that one failed attempt should not count as "the data is gone".
+    async function fetchWithRetry(kind) {
+      const src = SRC[kind];
+      let lastErr;
+      for (let attempt = 1; attempt <= FETCH_RETRIES; attempt++) {
+        try {
+          return await fetchJSON(src.url(), src.label);
+        } catch (e) {
+          lastErr = e;
+          console.warn('[' + src.label + '] attempt ' + attempt + '/' + FETCH_RETRIES + ' failed:', e.message);
+          if (attempt < FETCH_RETRIES) {
+            setSrc(kind, 'loading', src.label + ' · retry ' + attempt + '…');
+            bootStep(kind, 'loading', 'retry ' + attempt + '…');
+            await sleep(700 * attempt);   // linear backoff: 0.7s, 1.4s
+          }
+        }
+      }
+      throw lastErr;
+    }
+
+    // One endpoint, start to finish. Renders the moment ITS rows land — it never waits
+    // for the sibling stream, so whichever sheet answers first is on screen first.
+    async function fetchSource(kind) {
+      const src = SRC[kind];
+      net[kind] = 'loading';
+      setSrc(kind, 'loading', src.label + ' · fetching…');
+      bootStep(kind, 'loading', 'fetching…');
+      renderNetStatus();
+      try {
+        const rows = await fetchWithRetry(kind);
+        cacheWrite(src.slot, rows);
+        net[kind] = 'ok'; net.lastLive = Date.now(); net.mode = 'live'; net.cachedAt = Date.now();
+        setSrc(kind, 'ok', src.label + ' · ' + rows.length + ' rows live');
+        bootStep(kind, 'ok', rows.length + ' rows ✓');
+        src.apply(rows);           // ← paint now, don't wait for the other stream
+        renderNetStatus();
+        return { kind, ok: true };
+      } catch (e) {
+        net[kind] = 'err';
+        const msg = (e && e.message) || String(e);
+        console.error('[' + src.label + '] FAILED:', msg);
+        setSrc(kind, 'err', src.label + ' · unreachable');
+        bootStep(kind, 'err', 'failed');
+        renderNetStatus();
+        return { kind, ok: false, message: msg };
+      }
     }
 
     async function loadFromAPI(isRefresh) {
-      const hasReg = !!API.register, hasChem = !!API.chem;
-      if (!hasReg && !hasChem) return false; // nothing configured
-      if (!isRefresh) showBootInitial();
-      setStatus('refreshing', (isRefresh ? 'Refreshing' : 'Loading') + ' live data…');
+      const kinds = [];
+      if (API.register) kinds.push('reg');
+      if (API.chem) kinds.push('chem');
+      if (!kinds.length) return false;
+      if (net.inflight) return false;                      // a sync is already running
+      if (!isRefresh && !state.register && !state.chem) showBootInitial();
 
-      // mark both steps "loading"
-      bootStep('reg', hasReg ? 'loading' : '', hasReg ? 'fetching…' : 'not configured');
-      bootStep('chem', hasChem ? 'loading' : '', hasChem ? 'fetching…' : 'not configured');
+      net.note = '';
+      netStart();
+      renderNetStatus();
+      // Both streams run at once and each one renders independently as it completes.
+      const results = await Promise.allSettled(kinds.map(fetchSource));
+      netEnd();
 
-      // Fetch in parallel for speed
-      const errs = [];
-      const [regRes, chemRes] = await Promise.allSettled([
-        hasReg ? fetchJSON(API.register, 'register') : Promise.resolve(null),
-        hasChem ? fetchJSON(API.chem, 'chemical') : Promise.resolve(null)
-      ]);
+      const settled = results.map((r, i) => r.status === 'fulfilled'
+        ? r.value
+        : { kind: kinds[i], ok: false, message: String(r.reason && r.reason.message || r.reason) });
 
-      let reg = null, chem = null;
-      if (hasReg) {
-        if (regRes.status === 'fulfilled') { reg = regRes.value; bootStep('reg', 'ok', (reg && reg.length || 0) + ' rows ✓'); }
-        else { errs.push({ source: 'Register', message: regRes.reason && regRes.reason.message || String(regRes.reason) }); bootStep('reg', 'err', 'failed'); }
-      }
-      if (hasChem) {
-        if (chemRes.status === 'fulfilled') { chem = chemRes.value; bootStep('chem', 'ok', (chem && chem.length || 0) + ' rows ✓'); }
-        else { errs.push({ source: 'Chemical', message: chemRes.reason && chemRes.reason.message || String(chemRes.reason) }); bootStep('chem', 'err', 'failed'); }
-      }
+      if (settled.some(s => s.ok)) { renderNetStatus(); return true; }
 
-      if (reg || chem) {
-        loadData(reg, chem);   // showDashboard() hides boot + upload screens
-        if (errs.length) setStatus('refreshing', 'Loaded · partial: ' + errs.map(e => e.source).join(', ') + ' failed');
-        else markStatus(!isRefresh);
-        return true;
-      }
-      // total failure
-      setStatus('refreshing', 'Live fetch failed');
-      if (!isRefresh) bootError(errs);
+      // every stream failed — keep whatever is already on screen (saved copy / upload)
+      const errs = settled.map(s => ({ source: SRC[s.kind].label, message: s.message }));
+      if (!state.register && !state.chem) bootError(errs);
+      renderNetStatus();
       return false;
     }
 
     function startAutoRefresh() {
       if (autoTimer) clearInterval(autoTimer);
       if (AUTO_REFRESH_MS > 0 && (API.register || API.chem)) {
-        autoTimer = setInterval(() => loadFromAPI(true), AUTO_REFRESH_MS);
+        autoTimer = setInterval(() => { if (!document.hidden) loadFromAPI(true); }, AUTO_REFRESH_MS);
       }
     }
+
+    // Come back to the tab after a while → pull fresh numbers instead of showing a stale screen.
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden || net.inflight || !state.booted) return;
+      if (net.mode === 'file' || net.mode === 'sample') return;   // user chose their own data
+      if (!net.lastLive || Date.now() - net.lastLive > STALE_MS) loadFromAPI(true);
+    });
+    window.addEventListener('offline', () => { net.offline = true; renderNetStatus(); });
+    window.addEventListener('online', () => {
+      net.offline = false; renderNetStatus();
+      if (net.mode !== 'file' && net.mode !== 'sample') loadFromAPI(true);
+    });
 
     function handleFiles(files) {
       let reg = null, chem = null, errs = 0; let pending = files.length;
@@ -3361,9 +3700,8 @@
     // Refresh = re-fetch live data if an API is configured, else re-render
     document.getElementById('refreshBtn').onclick = () => {
       if (API.register || API.chem) { loadFromAPI(true); return; }
-      const el = document.getElementById('statusTxt'); el.className = 'status refreshing';
-      el.innerHTML = '<span class="sd"></span> Refreshing…';
-      setTimeout(() => { renderAll(); markStatus(); }, 350);
+      netStart(); renderNetStatus();
+      setTimeout(() => { renderAll(); netEnd(); renderNetStatus(); }, 350);
     };
     // ----- Dark / light theme -----
     const ICON_MOON = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
@@ -3429,23 +3767,39 @@
     };
     document.getElementById('bootSample').onclick = () => loadData(SAMPLE_REGISTER, SAMPLE_CHEM);
 
-    // Auto-load: API-first.
-    // 1) FORCE the correct initial visibility — boot screen ON, others OFF — so that
-    //    nothing ever flashes the upload screen at the user. This runs synchronously
-    //    before any await, no matter what.
-    // 2) Kick off the live fetch immediately.
-    // 3) If both URLs are missing, fall back to sample. We never silently fall back
-    //    on a fetch failure — the boot screen shows the error and offers retry.
+    // Auto-load: saved copy first, live data immediately after.
+    // 1) If a saved copy exists, the real dashboard is on screen in the first frame —
+    //    no spinner wait — clearly labelled as saved and syncing.
+    // 2) Otherwise force the boot screen (never flash the upload screen at the user).
+    // 3) Both live streams start at once and each repaints the moment it lands.
+    // 4) Sample data is used only when no URL is configured at all — a fetch failure
+    //    keeps the saved copy and offers a retry instead of silently faking data.
     (function bootSequence() {
-      document.getElementById('bootScreen').classList.remove('hidden');
       document.getElementById('uploadScreen').classList.add('hidden');
-      document.getElementById('dashboard').classList.add('hidden');
-      showBootInitial();
+      const cache = cacheRead();
+      const cReg = cache.register, cChem = cache.chem;
+      const haveCache = !!(cReg || cChem);
+
+      if (haveCache) {
+        net.mode = 'cache';
+        net.cachedAt = Math.max(cReg ? cReg.ts : 0, cChem ? cChem.ts : 0) || null;
+        if (cReg) setSrc('reg', 'cached', 'Register · saved copy');
+        if (cChem) setSrc('chem', 'cached', 'Chemical · saved copy');
+        applyData(cReg && cReg.rows, cChem && cChem.rows, { resetFilters: true });
+        document.getElementById('bootScreen').classList.add('hidden');
+        console.log('[ExactChoice] Painted from saved copy · written', new Date(net.cachedAt).toLocaleString());
+      } else {
+        document.getElementById('bootScreen').classList.remove('hidden');
+        document.getElementById('dashboard').classList.add('hidden');
+        showBootInitial();
+      }
+      renderNetStatus();
+      startStatusTicker();
       console.log('[ExactChoice] Booting — register:', API.register ? 'configured' : 'EMPTY', '· chemical:', API.chem ? 'configured' : 'EMPTY');
 
       (async () => {
         const ok = await loadFromAPI(false);
-        if (!ok && !(API.register || API.chem)) loadData(SAMPLE_REGISTER, SAMPLE_CHEM);
+        if (!ok && !haveCache && !(API.register || API.chem)) loadData(SAMPLE_REGISTER, SAMPLE_CHEM);
         startAutoRefresh();
       })();
     })();
