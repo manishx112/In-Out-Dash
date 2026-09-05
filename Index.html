@@ -596,7 +596,10 @@
     }
 
     .g2 {
-      grid-template-columns: repeat(2, 1fr)
+      grid-template-columns: repeat(2, 1fr);
+      /* cards in a chart row hug their own content — stretching the shorter one just
+         padded it with empty space next to a much taller neighbour */
+      align-items: start
     }
 
     .mb {
@@ -784,6 +787,25 @@
     .chart-sm {
       width: 100%;
       height: 260px
+    }
+
+    /* "Show all 13 parties" toggle in a chart card header. A chart shows a readable
+       top-N by default; this reveals the full list by growing the card, which beats a
+       scrollbar inside an already-scrolling page (and never slices a row in half). */
+    .chart-more {
+      padding: 6px 12px;
+      font-size: 11.5px;
+      white-space: nowrap
+    }
+
+    /* Reserve the toggle's row even when a chart has nothing to reveal, so two cards
+       side by side keep identical header heights. */
+    .chart-actions {
+      min-height: 32px
+    }
+
+    @media print {
+      .chart-more { display: none }
     }
 
     /* TABLE */
@@ -1045,6 +1067,26 @@
       height: 34px;
       stroke: var(--soft);
       margin-bottom: 10px
+    }
+
+    /* cold start: a card whose data stream is still in flight */
+    .empty .mini-spin {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 3px solid var(--blue-t);
+      border-top-color: var(--blue);
+      margin: 0 auto 12px;
+      animation: bootspin .8s linear infinite
+    }
+
+    .kpi.skeleton .kpi-val,
+    .kpi.skeleton .kpi-label {
+      color: var(--soft)
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      .empty .mini-spin { animation: none }
     }
 
     .section-label {
@@ -1761,16 +1803,22 @@
       <!-- Row 2 : the two boss questions -->
       <div class="grid g2 mb">
         <div class="card fade-up" style="animation-delay:.18s">
-          <div class="card-head">
-            <div class="card-title">Party-wise In Factory</div>
-            <div class="card-sub">Pieces processing — biggest backlog on top</div>
+          <div class="card-head with-action">
+            <div>
+              <div class="card-title">Party-wise In Factory</div>
+              <div class="card-sub">Pieces processing — biggest backlog on top</div>
+            </div>
+            <div class="head-actions chart-actions" id="pendingChartActions"></div>
           </div>
           <div id="pendingChart" class="chart"></div>
         </div>
         <div class="card fade-up" style="animation-delay:.24s">
-          <div class="card-head">
-            <div class="card-title" id="monthTitle">IN vs OUT by party</div>
-            <div class="card-sub" id="monthSub">Pieces in and out for the selected period</div>
+          <div class="card-head with-action">
+            <div>
+              <div class="card-title" id="monthTitle">IN vs OUT by party</div>
+              <div class="card-sub" id="monthSub">Pieces in and out for the selected period</div>
+            </div>
+            <div class="head-actions chart-actions" id="monthChartActions"></div>
           </div>
           <div id="monthChart" class="chart"></div>
         </div>
@@ -1821,9 +1869,12 @@
       <div class="section-label">Chemical usage</div>
       <div class="grid g2 mb">
         <div class="card fade-up" style="animation-delay:.05s">
-          <div class="card-head">
-            <div class="card-title">Top chemicals used</div>
-            <div class="card-sub">Total quantity across filtered lots</div>
+          <div class="card-head with-action">
+            <div>
+              <div class="card-title">Top chemicals used</div>
+              <div class="card-sub">Total quantity across filtered lots</div>
+            </div>
+            <div class="head-actions chart-actions" id="topChemActions"></div>
           </div>
           <div id="topChem" class="chart"></div>
         </div>
@@ -1866,9 +1917,12 @@
 
       <div class="section-label">Chemical consumption forecast</div>
       <div class="card fade-up mb">
-        <div class="card-head">
-          <div class="card-title">Projected chemical demand — next month</div>
-          <div class="card-sub" id="chemForecastSub">Top chemicals by projected quantity</div>
+        <div class="card-head with-action">
+          <div>
+            <div class="card-title">Projected chemical demand — next month</div>
+            <div class="card-sub" id="chemForecastSub">Top chemicals by projected quantity</div>
+          </div>
+          <div class="head-actions chart-actions" id="chemForecastChartActions"></div>
         </div>
         <div id="chemForecastChart" class="chart"></div>
       </div>
@@ -1904,6 +1958,7 @@
     const FONT = { family: 'Poppins, sans-serif', color: '#475569', size: 12 };
     let GRID = '#e2e8f0';
     let AXIS_INK = '#0f172a';
+    let CARD_BG = '#ffffff';   // marker/slice outline — must match the card, not always white
     const CONFIG = { displayModeBar: false, responsive: true };
     const HL = { bgcolor: '#1e293b', font: { family: 'Poppins, sans-serif', color: '#fff' }, bordercolor: '#475569' };
     const MONTH_ORDER = { January: 1, February: 2, March: 3, April: 4, May: 5, June: 6, July: 7, August: 8, September: 9, October: 10, November: 11, December: 12 };
@@ -1932,7 +1987,8 @@
       pendSearch: '',    // pending-table search
       tableFilter: 'all', // 'all' or 'pending'
       page: 'home',      // 'home' or 'forecast'
-      booted: false      // true once the dashboard surface has been built at least once
+      booted: false,     // true once the dashboard surface has been built at least once
+      expand: {}         // chartId -> true when the user asked for the full category list
     };
 
     /* Live-connection state, surfaced in the filter bar so the user can always tell
@@ -2290,8 +2346,11 @@
         if (hasData()) {
           note = 'other filters cleared (no matching data)';
         } else {
-          // even alone this value has no data (e.g. an unknown lot) — restore the others
+          // Even on its own this value matches nothing (e.g. a mistyped lot number).
+          // Restore the other filters and say so — otherwise every card just goes blank
+          // and the user has no idea which input caused it.
           others.forEach(k => { state.filters[k] = saved[k]; });
+          note = 'no data for ' + key + ' "' + value + '" — clear it to see everything';
         }
       }
       updateFilterOptions();
@@ -2344,6 +2403,93 @@
       renderAll(); markStatus();
     }
 
+    /* ---------- responsive chart helpers ----------
+       The live sheets carry far more parties and months than the sample did, and Plotly
+       will happily draw twenty overlapping labels on top of each other. These keep every
+       chart legible at any data volume and any screen width: long tails fold into a single
+       "Others" entry, long names are truncated, month names shorten, category charts grow
+       taller instead of thinner, and value labels are dropped when they no longer fit. */
+    function vw() { return window.innerWidth || document.documentElement.clientWidth || 1024; }
+    function isMobile() { return vw() <= 560; }
+    function isNarrow() { return vw() <= 900; }
+
+    // "December 2025" -> "Dec '25"  (full month names blew past each other on the x-axis)
+    function shortMonth(label) {
+      const p = String(label).trim().split(' ');
+      if (p.length < 2) return label;
+      const y = p[p.length - 1], m = p.slice(0, -1).join(' ');
+      if (!/^\d{4}$/.test(y) || MONTH_NAMES.indexOf(m) === -1) return label;
+      return m.slice(0, 3) + " '" + y.slice(2);
+    }
+    function truncLabel(s, n) { s = String(s == null ? '' : s); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+
+    // Keep the top `n` categories and fold the rest into one "Others (k)" entry, summing
+    // every numeric field in `keys`. Returns descending order. Folding one item is pointless,
+    // so a list of n+1 is returned untouched.
+    function topWithOthers(items, n, keys) {
+      const sorted = [...items].sort((a, b) => b[keys[0]] - a[keys[0]]);
+      if (sorted.length <= n + 1) return sorted;
+      const head = sorted.slice(0, n), tail = sorted.slice(n);
+      const other = { name: 'Others (' + tail.length + ')', isOthers: true };
+      keys.forEach(k => { other[k] = tail.reduce((s, i) => s + (i[k] || 0), 0); });
+      head.push(other);
+      return head;
+    }
+    // Category charts must grow downward as rows are added — never squeeze rows thinner.
+    function barHeight(rows, per, min) { return Math.max(min || 260, rows * (per || 30) + 80); }
+    function sizeChart(gd, h) { gd.style.height = h + 'px'; return h; }
+    // tick/legend font at an explicit size, always following the active theme colour
+    function chartFont(size) { return { family: 'Poppins, sans-serif', size: size, color: FONT.color }; }
+
+    /* ---------- capped, scrollable chart surfaces ----------
+       Category charts must grow a row at a time, but an unbounded chart turns a card into
+       a very long strip and leaves its grid neighbour padded with empty space. Past the cap
+       the plot keeps its full natural height inside a fixed-height scroll window, so rows
+       stay readable, cards stay comparable, and any number of categories fits. */
+    // Clear a chart host and size it to its content. Charts are never given an inner
+    // scrollbar: a scroll region inside a scrolling page fights the page for the wheel
+    // and inevitably cuts a row in half at the boundary. Too many categories is handled
+    // by showing a readable top-N with an explicit "show all" instead.
+    function chartSurface(host, h) {
+      host.innerHTML = '';
+      host.style.height = h + 'px';
+      return host;
+    }
+
+    function chartEmpty(host, msg) {
+      host.style.height = '';
+      host.innerHTML = '<div class="empty">' + msg + '</div>';
+    }
+
+    // Rows drawn before the tail is folded into "Others". Expanding is per-chart and
+    // sticky, so someone who wants the full list keeps it while they filter.
+    function rowLimit(id) { return state.expand[id] ? 9999 : (isMobile() ? 7 : 10); }
+
+    // How many rows a chart will actually draw, given the total and its limit.
+    function rowsShown(total, id) { const l = rowLimit(id); return total <= l + 1 ? total : l + 1; }
+
+    // Put a "Show all N parties" / "Show top 10" button in the card header, or remove it
+    // when nothing is hidden.
+    function chartToggle(id, total, noun, rerender) {
+      const slot = document.getElementById(id + 'Actions');
+      if (!slot) return;
+      const expanded = !!state.expand[id];
+      const base = isMobile() ? 7 : 10;
+      if (!expanded && total <= base + 1) { slot.innerHTML = ''; return; }
+      let btn = slot.querySelector('.chart-more');
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-ghost chart-more';
+        btn.addEventListener('click', () => {
+          state.expand[id] = !state.expand[id];
+          (rerender || renderAll)();
+        });
+        slot.appendChild(btn);
+      }
+      btn.textContent = expanded ? 'Show top ' + base : 'Show all ' + total + ' ' + noun;
+    }
+
     /* ---------- render ---------- */
     const mergeAxis = (def, ext) => {
       if (!ext) return def;
@@ -2363,7 +2509,9 @@
         hoverlabel: Object.assign({ font: { family: 'Poppins, sans-serif', color: '#fff' }, bgcolor: '#1e293b', bordercolor: '#475569' }, extra.hoverlabel || {}),
         xaxis: mergeAxis({ gridcolor: GRID, zerolinecolor: GRID, linecolor: GRID, tickfont: FONT, layer: 'below traces' }, extra.xaxis),
         yaxis: mergeAxis({ gridcolor: GRID, zerolinecolor: GRID, linecolor: GRID, tickfont: FONT, layer: 'below traces' }, extra.yaxis),
-        uniformtext: { mode: 'show', minsize: 9 }
+        // 'hide' (not 'show') — a label that cannot fit its bar is dropped instead of being
+        // squashed/rotated into the unreadable overlapping digits this used to produce.
+        uniformtext: { mode: 'hide', minsize: 9 }
       };
       for (const k in extra) {
         if (!['margin', 'hoverlabel', 'xaxis', 'yaxis'].includes(k)) {
@@ -2517,46 +2665,60 @@
     <div class="cs-cell"><span>Pending</span><b class="${pend > 0 ? 'warn' : 'hl'}">${fmt(pend)} <small style="color:var(--soft);font-weight:500;font-size:12px">pcs</small></b></div>`;
 
       if (!buckets.length) {
-        document.getElementById('flowChart').innerHTML = '<div class="empty">No records match the current filters.</div>'; return;
+        chartEmpty(document.getElementById('flowChart'), 'No records match the current filters.'); return;
       }
 
-      // labels only when ≤8 buckets (otherwise it crowds)
-      const showLabels = buckets.length <= 8;
+      const mob = isMobile();
+      // Axis labels: full month names ("December 2025") ran into each other, so month mode
+      // shows "Dec '25". The untouched value stays in customdata for the click-to-filter.
+      const rawBuckets = buckets.slice();
+      const xLabels = mode === 'month' ? buckets.map(shortMonth) : buckets;
+      if (mode === 'month') tickAngle = (xLabels.length > 6 || mob) ? -35 : 0;
+      else tickAngle = mob ? -45 : -30;
+
+      // Point labels are dropped once the series is dense — with both lines labelled they
+      // collided head-on wherever IN and OUT crossed. Hover still gives the exact figure.
+      const showLabels = xLabels.length <= (mob ? 4 : 6);
       const inLabels = showLabels ? ins.map(v => v ? fmt(v) : '') : [];
       const outLabels = showLabels ? outs.map(v => v ? fmt(v) : '') : [];
 
       const inTrace = {
-        x: buckets, y: ins, name: 'IN', type: 'scatter', mode: showLabels ? 'lines+markers+text' : 'lines+markers',
-        line: { shape: 'spline', color: PAL.blue, width: 3 }, marker: { size: 8, color: PAL.blue, line: { color: '#fff', width: 2 } },
+        x: xLabels, y: ins, customdata: rawBuckets, name: 'IN', type: 'scatter', mode: showLabels ? 'lines+markers+text' : 'lines+markers',
+        line: { shape: 'spline', color: PAL.blue, width: 3 }, marker: { size: mob ? 6 : 8, color: PAL.blue, line: { color: CARD_BG, width: 2 } },
         fill: 'tozeroy', fillcolor: PAL.blue + '1f', text: inLabels, textposition: 'top center',
-        textfont: { family: 'Poppins', size: 11, color: PAL.blue },
-        hovertemplate: 'IN · %{x}<br><b>%{y:,} pcs</b><extra></extra>', hoverlabel: HL,
+        textfont: { family: 'Poppins', size: mob ? 9 : 11, color: PAL.blue },
+        hovertemplate: 'IN · %{customdata}<br><b>%{y:,} pcs</b><extra></extra>', hoverlabel: HL,
         cliponaxis: false
       };
       const outTrace = {
-        x: buckets, y: outs, name: 'OUT', type: 'scatter', mode: showLabels ? 'lines+markers+text' : 'lines+markers',
-        line: { shape: 'spline', color: PAL.green, width: 3 }, marker: { size: 8, color: PAL.green, line: { color: '#fff', width: 2 } },
+        x: xLabels, y: outs, customdata: rawBuckets, name: 'OUT', type: 'scatter', mode: showLabels ? 'lines+markers+text' : 'lines+markers',
+        line: { shape: 'spline', color: PAL.green, width: 3 }, marker: { size: mob ? 6 : 8, color: PAL.green, line: { color: CARD_BG, width: 2 } },
         fill: 'tozeroy', fillcolor: PAL.green + '1f', text: outLabels, textposition: 'bottom center',
-        textfont: { family: 'Poppins', size: 11, color: PAL.green },
-        hovertemplate: 'OUT · %{x}<br><b>%{y:,} pcs</b><extra></extra>', hoverlabel: HL,
+        textfont: { family: 'Poppins', size: mob ? 9 : 11, color: PAL.green },
+        hovertemplate: 'OUT · %{customdata}<br><b>%{y:,} pcs</b><extra></extra>', hoverlabel: HL,
         cliponaxis: false
       };
 
       const yMax = Math.max(...ins, ...outs) * 1.15 || 1;
       const gd = document.getElementById('flowChart');
       gd.innerHTML = '';
+      sizeChart(gd, mob ? 260 : 320);
       Plotly.newPlot(gd, [inTrace, outTrace],
         baseLayout({
-          legend: { orientation: 'h', y: 1.14, x: 0, font: FONT }, margin: { l: 70, r: 45, t: 30, b: 50 },
-          xaxis: { gridcolor: GRID, tickfont: FONT, tickangle: tickAngle },
-          yaxis: { gridcolor: GRID, tickfont: FONT, range: [0, yMax] }
+          height: mob ? 260 : 320,
+          legend: { orientation: 'h', y: 1.16, x: 0, font: chartFont(mob ? 10 : 12) },
+          margin: { l: mob ? 46 : 62, r: mob ? 14 : 30, t: 34, b: 40 },
+          // automargin lets the rotated tick labels reserve their own space instead of
+          // being clipped at the edges (the old fixed margins cut off the last month)
+          xaxis: { gridcolor: GRID, tickfont: chartFont(mob ? 9 : 11), tickangle: tickAngle, automargin: true },
+          yaxis: { gridcolor: GRID, tickfont: chartFont(mob ? 9 : 11), range: [0, yMax], automargin: true }
         }), CONFIG);
 
       gd.removeAllListeners('plotly_click');
       gd.on('plotly_click', data => {
         if (!data || !data.points || !data.points[0]) return;
-        const val = data.points[0].x;
-        // only month-mode bars map to the global month filter; same bar again clears it
+        const val = data.points[0].customdata;   // the real "June 2026", not the short label
+        // only month-mode points map to the global month filter; same point again clears it
         if (state._monthSet && state._monthSet.has(val)) {
           setFilter('month', state.filters.month === val ? '' : val);
           document.getElementById('pendingCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2564,31 +2726,65 @@
       });
     }
 
+    // Enough distinct hues that slices never repeat a colour before "Others" kicks in.
+    const DONUT_COLORS = [PAL.blue, PAL.teal, PAL.green, PAL.amber, PAL.violet, PAL.rose,
+      '#0ea5e9', '#84cc16', '#f97316', '#ec4899'];
+
     function renderPartyDonut(reg) {
-      const a = partyAgg(reg); const labels = Object.keys(a).sort((x, y) => a[y].in - a[x].in); const vals = labels.map(l => a[l].in);
-      if (!labels.length) { document.getElementById('partyDonut').innerHTML = '<div class="empty">No records match the current filters.</div>'; return; }
       const gd = document.getElementById('partyDonut');
+      const a = partyAgg(reg);
+      let items = Object.keys(a).map(p => ({ name: p, in: a[p].in })).filter(i => i.in > 0);
+      if (!items.length) { chartEmpty(gd, 'No records match the current filters.'); return; }
+
+      const mob = isMobile();
+      const total = items.reduce((s, i) => s + i.in, 0);
+      items.sort((x, y) => y.in - x.in);
+      // Sub-2% parties produced a fan of overlapping leader lines ("LAVANYA ENT – 0.212%"
+      // printed straight through its neighbour). Fold them, and anything past the top few,
+      // into one grey wedge — the exact figures are still one hover away.
+      const maxSlices = mob ? 5 : 8;
+      const keep = items.filter((i, idx) => idx < maxSlices && i.in / total >= 0.02);
+      const rest = items.filter(i => keep.indexOf(i) === -1);
+      const shown = keep.slice();
+      if (rest.length === 1) shown.push(rest[0]);
+      else if (rest.length > 1) shown.push({ name: 'Others (' + rest.length + ')', in: rest.reduce((s, i) => s + i.in, 0), isOthers: true });
+
+      const cols = shown.map((i, idx) => i.isOthers ? '#94a3b8' : DONUT_COLORS[idx % DONUT_COLORS.length]);
+      const h = mob ? 330 : 340;
       gd.innerHTML = '';
+      sizeChart(gd, h);
       Plotly.newPlot(gd, [{
-        labels, values: vals, type: 'pie', hole: 0.58,
-        marker: { colors: PARTY_COLORS, line: { color: '#fff', width: 2 } },
-        textinfo: 'label+percent', textposition: 'outside',
-        texttemplate: '%{label} - %{percent}',
-        outsidetextfont: { family: 'Poppins', size: 12, color: AXIS_INK },
-        hovertemplate: '%{label}<br>%{value:,} pcs (%{percent})<extra></extra>', hoverlabel: HL
+        labels: shown.map(i => truncLabel(i.name, mob ? 16 : 20)),
+        values: shown.map(i => i.in),
+        customdata: shown.map(i => [i.name, i.isOthers ? 1 : 0]),
+        type: 'pie', hole: 0.58, sort: false, direction: 'clockwise',
+        marker: { colors: cols, line: { color: CARD_BG, width: 2 } },
+        // narrow screens have no room for outside labels + leader lines: percentages go
+        // inside the slice and the names move to a legend underneath
+        textinfo: mob ? 'percent' : 'label+percent',
+        textposition: mob ? 'inside' : 'outside',
+        texttemplate: mob ? '%{percent}' : '%{label} · %{percent}',
+        insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
+        outsidetextfont: { family: 'Poppins', size: 11.5, color: AXIS_INK },
+        automargin: true,
+        hovertemplate: '%{customdata[0]}<br>%{value:,} pcs (%{percent})<extra></extra>', hoverlabel: HL
       }],
         baseLayout({
-          margin: { l: 80, r: 80, t: 30, b: 30 }, showlegend: false,
+          height: h,
+          margin: mob ? { l: 8, r: 8, t: 10, b: 8 } : { l: 70, r: 70, t: 26, b: 26 },
+          showlegend: mob,
+          legend: { orientation: 'h', y: -0.06, x: 0.5, xanchor: 'center', font: chartFont(9.5) },
           annotations: [{
-            text: fmt(vals.reduce((s, v) => s + v, 0)) + '<br><span style="font-size:11px;color:#94a3b8">total pcs</span>',
-            showarrow: false, font: { family: 'Poppins', size: 18, color: AXIS_INK }
+            text: fmt(total) + '<br><span style="font-size:11px;color:#94a3b8">total pcs</span>',
+            showarrow: false, font: { family: 'Poppins', size: mob ? 15 : 18, color: AXIS_INK }
           }]
         }), CONFIG);
 
       gd.removeAllListeners('plotly_click');
       gd.on('plotly_click', data => {
-        if (!data || !data.points || !data.points[0]) return;
-        const party = data.points[0].label;
+        const pt = data && data.points && data.points[0];
+        if (!pt || !pt.customdata || pt.customdata[1]) return;   // "Others" is not a filter
+        const party = pt.customdata[0];
         if (party) {
           state.tableFilter = 'all';
           const tf = document.getElementById('tableFilter');
@@ -2599,31 +2795,46 @@
       });
     }
 
-    function renderPending(reg) {
-      const a = partyAgg(reg); const parties = Object.keys(a).filter(p => a[p].pend > 0).sort((x, y) => a[x].pend - a[y].pend);
-      if (!parties.length) { document.getElementById('pendingChart').innerHTML = '<div class="empty">No pieces in factory — everything dispatched. 🎉</div>'; return; }
-      const vals = parties.map(p => a[p].pend); const cols = gradient(PAL.amber, PAL.rose, parties.length);
-      const txt = parties.map(p => `${a[p].plots} lot${a[p].plots !== 1 ? 's' : ''} · ${fmt(a[p].pend)} pcs`);
+    function renderPending(reg, sharedH) {
       const gd = document.getElementById('pendingChart');
-      gd.innerHTML = '';
-      Plotly.newPlot(gd, [{
-        x: vals, y: parties, type: 'bar', orientation: 'h', marker: { color: cols },
+      const a = partyAgg(reg);
+      let items = Object.keys(a).filter(p => a[p].pend > 0).map(p => ({ name: p, pend: a[p].pend, plots: a[p].plots }));
+      if (!items.length) { chartEmpty(gd, 'No pieces in factory — everything dispatched. 🎉'); return; }
+
+      const mob = isMobile();
+      const totalParties = items.length;
+      items = topWithOthers(items, rowLimit('pendingChart'), ['pend', 'plots']);
+      chartToggle('pendingChart', totalParties, 'parties');
+      items.reverse();                       // Plotly stacks bottom-up: biggest ends on top
+      const labels = items.map(i => truncLabel(i.name, mob ? 13 : 20));
+      const vals = items.map(i => i.pend);
+      const cols = gradient(PAL.amber, PAL.rose, items.length);
+      const txt = items.map(i => `${i.plots} lot${i.plots !== 1 ? 's' : ''} · ${fmt(i.pend)} pcs`);
+      const h = sharedH || barHeight(items.length, mob ? 34 : 32, mob ? 260 : 300);
+      const surf = chartSurface(gd, h);
+
+      Plotly.newPlot(surf, [{
+        x: vals, y: labels, type: 'bar', orientation: 'h', marker: { color: cols },
         text: txt, textposition: 'auto',
-        insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
-        outsidetextfont: { family: 'Poppins', size: 11, color: AXIS_INK },
+        insidetextfont: { family: 'Poppins', size: mob ? 9.5 : 11, color: '#ffffff' },
+        outsidetextfont: { family: 'Poppins', size: mob ? 9.5 : 11, color: AXIS_INK },
         insidetextanchor: 'middle',
-        hovertemplate: '%{y}<br>%{x:,} pcs in factory<extra></extra>', hoverlabel: HL,
+        customdata: items.map(i => [i.name, i.isOthers ? 1 : 0]),
+        hovertemplate: '%{customdata[0]}<br>%{x:,} pcs in factory<extra></extra>', hoverlabel: HL,
         cliponaxis: false
       }],
         baseLayout({
-          margin: { l: 120, r: 60, t: 10, b: 36 }, xaxis: { gridcolor: GRID, title: { text: 'pcs in factory', font: FONT }, tickfont: FONT },
-          yaxis: { automargin: true, tickfont: { family: 'Poppins', size: 12 }, ticksuffix: '  ' }
+          height: h,
+          margin: { l: mob ? 8 : 12, r: mob ? 16 : 60, t: 10, b: 40 },
+          xaxis: { gridcolor: GRID, title: { text: 'pcs in factory', font: chartFont(mob ? 9 : 11) }, tickfont: chartFont(mob ? 9 : 11), automargin: true },
+          yaxis: { automargin: true, tickfont: chartFont(mob ? 9.5 : 12), ticksuffix: '  ' }
         }), CONFIG);
 
-      gd.removeAllListeners('plotly_click');
-      gd.on('plotly_click', data => {
-        if (!data || !data.points || !data.points[0]) return;
-        const party = data.points[0].y;
+      surf.removeAllListeners('plotly_click');
+      surf.on('plotly_click', data => {
+        const pt = data && data.points && data.points[0];
+        if (!pt || !pt.customdata || pt.customdata[1]) return;   // "Others" is not a filter
+        const party = pt.customdata[0];
         if (party) {
           state.tableFilter = 'pending';
           const tf = document.getElementById('tableFilter');
@@ -2634,7 +2845,7 @@
       });
     }
 
-    function renderMonthChart(reg) {
+    function renderMonthChart(reg, sharedH) {
       const f = state.filters;
       const labelParts = [];
       if (f.month) labelParts.push(f.month);
@@ -2643,37 +2854,54 @@
       const label = labelParts.length ? labelParts.join(' · ') : 'all data';
       document.getElementById('monthTitle').textContent = `IN vs OUT by party · ${label}`;
 
-      const a = {}; reg.forEach(r => { if (!r.real) return; a[r.party] = a[r.party] || { in: 0, out: 0 }; a[r.party].in += r.inPv; if (r.outPv) a[r.party].out += r.outPv; });
-      const parties = Object.keys(a).sort((x, y) => a[y].in - a[x].in);
-      if (!parties.length) { document.getElementById('monthChart').innerHTML = '<div class="empty">No records match the current filters.</div>'; return; }
-      const inVals = parties.map(p => a[p].in);
-      const outVals = parties.map(p => a[p].out);
       const gd = document.getElementById('monthChart');
-      gd.innerHTML = '';
-      Plotly.newPlot(gd, [
+      const a = {}; reg.forEach(r => { if (!r.real) return; a[r.party] = a[r.party] || { in: 0, out: 0 }; a[r.party].in += r.inPv; if (r.outPv) a[r.party].out += r.outPv; });
+      let items = Object.keys(a).map(p => ({ name: p, in: a[p].in, out: a[p].out }));
+      if (!items.length) { chartEmpty(gd, 'No records match the current filters.'); return; }
+
+      // Vertical bars cannot hold 15 party names — they overlapped into an unreadable smear.
+      // Horizontal bars give every name its own line, and the card scrolls past the cap.
+      const mob = isMobile();
+      const totalParties = items.length;
+      items = topWithOthers(items, rowLimit('monthChart'), ['in', 'out']);
+      chartToggle('monthChart', totalParties, 'parties');
+      items.reverse();                       // biggest ends up on top
+      const labels = items.map(i => truncLabel(i.name, mob ? 13 : 20));
+      const inVals = items.map(i => i.in), outVals = items.map(i => i.out);
+      const cd = items.map(i => [i.name, i.isOthers ? 1 : 0]);
+      const h = sharedH || barHeight(items.length, mob ? 46 : 44, mob ? 280 : 320);
+      const tf2 = { family: 'Poppins', size: items.length > 10 ? 9 : 10 };
+      const surf = chartSurface(gd, h);
+
+      Plotly.newPlot(surf, [
         {
-          x: parties, y: inVals, name: 'IN', type: 'bar', marker: { color: PAL.blue },
-          text: inVals.map(v => v ? fmt(v) : ''), textposition: 'auto',
-          insidetextfont: { family: 'Poppins', size: 10, color: '#ffffff' },
-          outsidetextfont: { family: 'Poppins', size: 10, color: AXIS_INK },
-          hovertemplate: '%{x}<br>IN %{y:,} pcs<extra></extra>', hoverlabel: HL, cliponaxis: false
+          y: labels, x: inVals, customdata: cd, name: 'IN', type: 'bar', orientation: 'h', marker: { color: PAL.blue },
+          // 'outside' (not 'auto'): each bar owns its own row, so the value sits at the bar's
+          // end where nothing can collide with it. With 'auto' Plotly hid 13 of 16 labels.
+          text: inVals.map(v => v ? fmt(v) : ''), textposition: 'outside',
+          outsidetextfont: { ...tf2, color: AXIS_INK },
+          hovertemplate: '%{customdata[0]}<br>IN %{x:,} pcs<extra></extra>', hoverlabel: HL, cliponaxis: false
         },
         {
-          x: parties, y: outVals, name: 'OUT', type: 'bar', marker: { color: PAL.teal },
-          text: outVals.map(v => v ? fmt(v) : ''), textposition: 'auto',
-          insidetextfont: { family: 'Poppins', size: 10, color: '#ffffff' },
-          outsidetextfont: { family: 'Poppins', size: 10, color: AXIS_INK },
-          hovertemplate: '%{x}<br>OUT %{y:,} pcs<extra></extra>', hoverlabel: HL, cliponaxis: false
+          y: labels, x: outVals, customdata: cd, name: 'OUT', type: 'bar', orientation: 'h', marker: { color: PAL.teal },
+          text: outVals.map(v => v ? fmt(v) : ''), textposition: 'outside',
+          outsidetextfont: { ...tf2, color: AXIS_INK },
+          hovertemplate: '%{customdata[0]}<br>OUT %{x:,} pcs<extra></extra>', hoverlabel: HL, cliponaxis: false
         }],
         baseLayout({
-          barmode: 'group', legend: { orientation: 'h', y: 1.12, x: 0, font: FONT }, margin: { l: 55, r: 18, t: 36, b: 48 },
-          xaxis: { tickfont: FONT, gridcolor: GRID, tickangle: -12 }, yaxis: { gridcolor: GRID, tickfont: FONT }
+          height: h, barmode: 'group', bargap: 0.28, bargroupgap: 0.06,
+          uniformtext: { mode: 'hide', minsize: 8 },
+          legend: { orientation: 'h', y: 1.06, x: 0, font: chartFont(mob ? 10 : 12) },
+          margin: { l: mob ? 8 : 12, r: mob ? 52 : 64, t: 34, b: 38 },
+          xaxis: { gridcolor: GRID, tickfont: chartFont(mob ? 9 : 11), automargin: true },
+          yaxis: { automargin: true, tickfont: chartFont(mob ? 9.5 : 12), ticksuffix: '  ' }
         }), CONFIG);
 
-      gd.removeAllListeners('plotly_click');
-      gd.on('plotly_click', data => {
-        if (!data || !data.points || !data.points[0]) return;
-        const party = data.points[0].x;
+      surf.removeAllListeners('plotly_click');
+      surf.on('plotly_click', data => {
+        const pt = data && data.points && data.points[0];
+        if (!pt || !pt.customdata || pt.customdata[1]) return;   // "Others" is not a filter
+        const party = pt.customdata[0];
         if (party) {
           state.tableFilter = 'all';
           const tf = document.getElementById('tableFilter');
@@ -2777,29 +3005,29 @@
     // else a blue→rose gradient. filterKind ('proc'|'wash') makes each bar clickable → drills into the table.
     // Shows a "No data" state when items is empty (e.g. a lot filter that matches nothing).
     function drawHBar(gd, subEl, items, totalLots, subBase, h, useItemColor, filterKind, activeKey) {
-      gd.style.height = h + 'px';
-      gd.innerHTML = '';
       if (!items.length) {
         if (subEl) subEl.textContent = subBase;
-        gd.innerHTML = '<div class="empty">No data for the current filter.</div>';
+        chartEmpty(gd, 'No data for the current filter.');
         return;
       }
+      const surf = chartSurface(gd, h);
       items.sort((a, b) => a.pcs - b.pcs); // ascending → largest lands at the top
+      const mob = isMobile();
       const hint = activeKey ? 'click the active bar to clear' : 'click a bar to drill in';
       if (subEl) subEl.textContent = `${subBase} · (Total Lots ${totalLots}) · ${hint}`;
 
-      const labels = items.map(i => i.label);
+      const labels = items.map(i => truncLabel(i.label, mob ? 14 : 22));
       const pcsVals = items.map(i => i.pcs);
       const cols = useItemColor ? items.map(i => i.color) : gradient(PAL.blue, PAL.rose, items.length);
       // when a bar is selected, fade the others so the selection reads clearly (Power BI style)
       const opacity = activeKey ? items.map(i => i.key === activeKey ? 1 : 0.28) : 1;
       const txt = items.map(i => `${fmt(i.pcs)} pcs  (${i.lots} lot${i.lots !== 1 ? 's' : ''})`);
 
-      Plotly.newPlot(gd, [{
+      Plotly.newPlot(surf, [{
         x: pcsVals, y: labels, type: 'bar', orientation: 'h', marker: { color: cols, opacity: opacity },
         text: txt, textposition: 'auto',
-        insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
-        outsidetextfont: { family: 'Poppins', size: 11, color: AXIS_INK },
+        insidetextfont: { family: 'Poppins', size: mob ? 9.5 : 11, color: '#ffffff' },
+        outsidetextfont: { family: 'Poppins', size: mob ? 9.5 : 11, color: AXIS_INK },
         insidetextanchor: 'middle',
         customdata: items.map(i => [i.label, fmt(i.pcs), i.lots, i.key]),
         hovertemplate: '<b>%{customdata[0]}</b><br>%{customdata[1]} pcs · %{customdata[2]} lots<br><i>click to view lots</i><extra></extra>',
@@ -2807,15 +3035,15 @@
       }],
         baseLayout({
           height: h,
-          margin: { l: 120, r: 70, t: 16, b: 36 },
-          xaxis: { gridcolor: GRID, title: { text: 'pieces processed', font: FONT }, tickfont: FONT },
-          yaxis: { automargin: true, tickfont: { family: 'Poppins', size: 12, color: AXIS_INK }, ticksuffix: '  ' }
+          margin: { l: mob ? 8 : 12, r: mob ? 16 : 70, t: 16, b: 40 },
+          xaxis: { gridcolor: GRID, title: { text: 'pieces processed', font: chartFont(mob ? 9 : 11) }, tickfont: chartFont(mob ? 9 : 11), automargin: true },
+          yaxis: { automargin: true, tickfont: chartFont(mob ? 9.5 : 12), ticksuffix: '  ' }
         }), CONFIG);
 
       // make bars clickable → drill into the lot table
-      gd.style.cursor = 'pointer';
-      gd.removeAllListeners && gd.removeAllListeners('plotly_click');
-      gd.on('plotly_click', d => {
+      surf.style.cursor = 'pointer';
+      surf.removeAllListeners && surf.removeAllListeners('plotly_click');
+      surf.on('plotly_click', d => {
         const pt = d && d.points && d.points[0];
         if (pt && pt.customdata) drillByFilter(filterKind, pt.customdata[3]);
       });
@@ -2860,27 +3088,34 @@
 
     function renderTopChem(chem) {
       const agg = {}; chem.forEach(c => c.chems.forEach(ch => { const key = ch.name; agg[key] = agg[key] || { val: 0, unit: ch.unit }; agg[key].val += ch.val; }));
-      let names = Object.keys(agg).sort((a, b) => agg[b].val - agg[a].val).slice(0, 12);
-      if (!names.length) { document.getElementById('topChem').innerHTML = '<div class="empty">No chemicals match the current filter.</div>'; return; }
+      const totalChems = Object.keys(agg).length;
+      let names = Object.keys(agg).sort((a, b) => agg[b].val - agg[a].val)
+        .slice(0, state.expand.topChem ? 9999 : (isMobile() ? 10 : 14));
+      chartToggle('topChem', totalChems, 'chemicals');
+      if (!names.length) { chartEmpty(document.getElementById('topChem'), 'No chemicals match the current filter.'); return; }
       names = names.reverse();
+      const mob = isMobile();
       const vals = names.map(n => agg[n].val); const cols = gradient(PAL.blue, PAL.teal, names.length);
-      const labels = names.map(n => n.length > 22 ? n.slice(0, 21) + '…' : n);
+      const labels = names.map(n => truncLabel(n, mob ? 14 : 22));
       const txtLabels = names.map((n, i) => fmtChem(vals[i], agg[n].unit));
       const gd = document.getElementById('topChem');
-      gd.innerHTML = '';
-      Plotly.newPlot(gd, [{
+      const h = barHeight(names.length, mob ? 28 : 30, mob ? 260 : 300);
+      const surf = chartSurface(gd, h);
+      Plotly.newPlot(surf, [{
         x: vals, y: labels, type: 'bar', orientation: 'h', marker: { color: cols },
         text: txtLabels, textposition: 'auto',
-        insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
-        outsidetextfont: { family: 'Poppins', size: 11, color: AXIS_INK },
+        insidetextfont: { family: 'Poppins', size: mob ? 9.5 : 11, color: '#ffffff' },
+        outsidetextfont: { family: 'Poppins', size: mob ? 9.5 : 11, color: AXIS_INK },
         insidetextanchor: 'middle',
         customdata: names.map(n => [fmtChem(agg[n].val, agg[n].unit), n]),
         hovertemplate: '<b>%{customdata[1]}</b><br>%{customdata[0]}<extra></extra>', hoverlabel: HL,
         cliponaxis: false
       }],
         baseLayout({
-          margin: { l: 150, r: 64, t: 10, b: 36 }, xaxis: { gridcolor: GRID, title: { text: 'quantity used', font: FONT }, tickfont: FONT },
-          yaxis: { automargin: true, tickfont: { family: 'Poppins', size: 11 }, ticksuffix: '  ' }
+          height: h,
+          margin: { l: mob ? 8 : 12, r: mob ? 16 : 64, t: 10, b: 40 },
+          xaxis: { gridcolor: GRID, title: { text: 'quantity used', font: chartFont(mob ? 9 : 11) }, tickfont: chartFont(mob ? 9 : 11), automargin: true },
+          yaxis: { automargin: true, tickfont: chartFont(mob ? 9.5 : 11), ticksuffix: '  ' }
         }), CONFIG);
     }
 
@@ -2897,14 +3132,13 @@
       // Bar height must scale with how many chemicals are in this lot — a fixed 300px div
       // squashed every row once a lot had 15-20+ chemicals, so labels and value text overlapped
       // into unreadable garbage (e.g. a lone "kg" floating between two bars).
+      // a lot's full recipe is the whole point of this card — never truncate it
       const h = Math.max(280, c.chems.length * 30 + 50);
-      const cap = 640; // beyond this, scroll internally instead of ballooning the card
-      body.innerHTML = meta + (h > cap
-        ? `<div style="max-height:${cap}px;overflow-y:auto"><div id="drillChart" style="width:100%;height:${h}px"></div></div>`
-        : `<div id="drillChart" style="width:100%;height:${h}px"></div>`);
+      body.innerHTML = meta + '<div id="drillHost" class="chart"></div>';
+      const drillSurf = chartSurface(document.getElementById('drillHost'), h);
       const names = c.chems.map(x => x.name).reverse(); const vals = c.chems.map(x => x.val).reverse();
       const units = c.chems.map(x => x.unit).reverse(); const cols = gradient(PAL.teal, PAL.blue, names.length);
-      Plotly.newPlot('drillChart', [{
+      Plotly.newPlot(drillSurf, [{
         x: vals, y: names.map(n => n.length > 22 ? n.slice(0, 21) + '…' : n), type: 'bar', orientation: 'h', marker: { color: cols },
         customdata: vals.map((v, i) => fmtChem(v, units[i])), text: vals.map((v, i) => fmtChem(v, units[i])), textposition: 'auto',
         insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
@@ -2981,22 +3215,29 @@
       const { months, vals } = monthlySeries(reg, r => r.inP);
       if (!months.length) { gd.innerHTML = '<div class="empty">No register data to forecast from.</div>'; return null; }
       const { next, trend } = forecastNext(vals);
-      const xVals = [...months, nextMonthLabel(months[months.length - 1]) + ' (projected)'];
+      const mob = isMobile();
+      const nextLabel = nextMonthLabel(months[months.length - 1]);
+      const rawX = [...months, nextLabel];
+      // short month names + rotation, same reason as the flow chart: full names collide
+      const xVals = [...months.map(shortMonth), shortMonth(nextLabel) + ' ⟶'];
       const yVals = [...vals, next];
       const cols = months.map(() => PAL.blue).concat([PAL.blue]);
       const opacity = months.map(() => 1).concat([0.35]);
 
+      const h = mob ? 280 : 340;
       gd.innerHTML = '';
+      sizeChart(gd, h);
       Plotly.newPlot(gd, [{
-        x: xVals, y: yVals, type: 'bar', marker: { color: cols, opacity: opacity },
+        x: xVals, y: yVals, customdata: rawX, type: 'bar', marker: { color: cols, opacity: opacity },
         text: yVals.map(v => fmt(v)), textposition: 'auto',
-        insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
-        outsidetextfont: { family: 'Poppins', size: 11, color: AXIS_INK },
-        hovertemplate: '%{x}<br>%{y:,.0f} pcs<extra></extra>', hoverlabel: HL, cliponaxis: false
+        insidetextfont: { family: 'Poppins', size: mob ? 9 : 11, color: '#ffffff' },
+        outsidetextfont: { family: 'Poppins', size: mob ? 9 : 11, color: AXIS_INK },
+        hovertemplate: '%{customdata}<br>%{y:,.0f} pcs<extra></extra>', hoverlabel: HL, cliponaxis: false
       }], baseLayout({
-        margin: { l: 55, r: 18, t: 16, b: 52 },
-        xaxis: { tickfont: FONT, gridcolor: GRID, tickangle: -12 },
-        yaxis: { gridcolor: GRID, tickfont: FONT, title: { text: 'pieces IN', font: FONT } }
+        height: h,
+        margin: { l: mob ? 46 : 58, r: mob ? 10 : 18, t: 16, b: 40 },
+        xaxis: { tickfont: chartFont(mob ? 9 : 11), gridcolor: GRID, tickangle: (xVals.length > 6 || mob) ? -35 : 0, automargin: true },
+        yaxis: { gridcolor: GRID, tickfont: chartFont(mob ? 9 : 11), title: { text: 'pieces IN', font: chartFont(mob ? 9 : 11) }, automargin: true }
       }), CONFIG);
 
       const sub = document.getElementById('orderForecastSub');
@@ -3058,7 +3299,10 @@
         const months = Object.keys(monthMap).sort((a, b) => monthSortKey(a) - monthSortKey(b));
         const { next } = forecastNext(months.map(m => monthMap[m]));
         return { name, next, unit: unitByChem[name], months: months.length };
-      }).filter(p => p.next > 0).sort((a, b) => b.next - a.next).slice(0, 12).reverse();
+      }).filter(p => p.next > 0).sort((a, b) => b.next - a.next);
+      const totalProjected = projections.length;
+      chartToggle('chemForecastChart', totalProjected, 'chemicals', renderForecastPage);
+      projections = projections.slice(0, state.expand.chemForecastChart ? 9999 : (isMobile() ? 10 : 14)).reverse();
 
       if (!projections.length) { gd.innerHTML = '<div class="empty">No projected chemical demand — all recent usage trended to zero.</div>'; return null; }
 
@@ -3067,8 +3311,8 @@
       const cols = gradient(PAL.amber, PAL.rose, projections.length);
       const txt = projections.map(p => fmtChem(p.next, p.unit));
 
-      gd.innerHTML = '';
-      Plotly.newPlot(gd, [{
+      const cfSurf = chartSurface(gd, barHeight(projections.length, 30, 300));
+      Plotly.newPlot(cfSurf, [{
         x: vals, y: labels, type: 'bar', orientation: 'h', marker: { color: cols },
         text: txt, textposition: 'auto',
         insidetextfont: { family: 'Poppins', size: 11, color: '#ffffff' },
@@ -3077,8 +3321,9 @@
         hovertemplate: '<b>%{customdata[1]}</b><br>Projected: %{customdata[0]}<br>%{customdata[2]} month(s) of history<extra></extra>',
         hoverlabel: HL, cliponaxis: false
       }], baseLayout({
-        margin: { l: 150, r: 64, t: 10, b: 36 },
-        xaxis: { gridcolor: GRID, title: { text: 'projected quantity — next month', font: FONT }, tickfont: FONT },
+        height: barHeight(projections.length, 30, 300),
+        margin: { l: 12, r: 64, t: 10, b: 40 },
+        xaxis: { gridcolor: GRID, title: { text: 'projected quantity — next month', font: FONT }, tickfont: FONT, automargin: true },
         yaxis: { automargin: true, tickfont: { family: 'Poppins', size: 11 }, ticksuffix: '  ' }
       }), CONFIG);
 
@@ -3180,9 +3425,8 @@
     function renderForecastPage() {
       if (!state.register && !state.chem) {
         ['forecastKPIs'].forEach(id => document.getElementById(id).innerHTML = '');
-        document.getElementById('orderForecastChart').innerHTML = '<div class="empty">Load data on the Home page first.</div>';
-        document.getElementById('chemForecastChart').innerHTML = '<div class="empty">Load data on the Home page first.</div>';
-        document.getElementById('turnaroundChart').innerHTML = '<div class="empty">Load data on the Home page first.</div>';
+        ['orderForecastChart', 'chemForecastChart', 'turnaroundChart'].forEach(id =>
+          chartEmpty(document.getElementById(id), 'Load data on the Home page first.'));
         document.getElementById('partyForecastTbl').innerHTML = '';
         document.getElementById('pendingForecastTbl').innerHTML = '';
         return;
@@ -3204,21 +3448,52 @@
     }
 
     /* ---------- orchestration ---------- */
+    // Cold start: a stream that hasn't landed yet must say so. Without this the cards
+    // claim "upload the chemical sheet" while that very sheet is mid-flight.
+    function loadingBox(msg) { return '<div class="empty"><div class="mini-spin"></div>' + msg + '</div>'; }
+
+    function renderRegisterLoading() {
+      document.getElementById('kpiRow').innerHTML = ['blue', 'teal', 'amber', 'rose'].map(t => `
+    <div class="card kpi skeleton t-${t}">
+      <div class="kpi-top"><span class="kpi-label">Loading…</span></div>
+      <div class="kpi-val">—</div><div class="kpi-meta">waiting for the register</div>
+    </div>`).join('');
+      ['flowChart', 'partyDonut', 'pendingChart', 'monthChart', 'procChart', 'washChart'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.innerHTML = loadingBox('Loading register data…');
+      });
+      document.getElementById('pendingTable').innerHTML = loadingBox('Loading lots…');
+      document.getElementById('rewashCard').classList.add('hidden');
+    }
+
     function renderAll() {
       const reg = getFiltered();
       const chem = filteredLots();
 
       const parts = [];
       if (state.register) parts.push(`${state.register.length} register rows`);
+      else if (net.reg === 'loading') parts.push('loading register…');
       if (state.chem) parts.push(`${state.chem.length} chemical lots`);
+      else if (net.chem === 'loading') parts.push('loading chemicals…');
       const f = state.filters; const anyActive = f.month || f.wash || f.party || f.from || f.to || f.proc || f.lot;
-      if (anyActive) parts.push(`<b style="color:var(--blue)">${reg.length} showing</b>`);
+      if (anyActive && state.register) parts.push(`<b style="color:var(--blue)">${reg.length} showing</b>`);
       document.getElementById('recCount').innerHTML = parts.join(' · ') || 'no data';
 
       if (state.register) {
-        renderKPIs(reg); renderFlow(reg); renderPartyDonut(reg); renderPending(reg); renderMonthChart(reg); renderWashType(); renderRewash(reg);
+        renderKPIs(reg); renderFlow(reg); renderPartyDonut(reg);
+        // The backlog and IN/OUT cards share one grid row. Sizing them independently left
+        // the shorter card padded out beside the taller one, so they get a common height
+        // based on whichever will draw more rows.
+        const pa = partyAgg(reg);
+        const mob = isMobile();
+        const hBack = barHeight(rowsShown(Object.keys(pa).filter(k => pa[k].pend > 0).length, 'pendingChart'), mob ? 34 : 32, mob ? 260 : 300);
+        const hFlow = barHeight(rowsShown(Object.keys(pa).length, 'monthChart'), mob ? 46 : 44, mob ? 280 : 320);
+        const partyH = Math.max(hBack, hFlow);
+        renderPending(reg, partyH); renderMonthChart(reg, partyH);
+        renderWashType(); renderRewash(reg);
+        renderPendingTable(reg, chem);
+      } else {
+        renderRegisterLoading();
       }
-      renderPendingTable(reg, chem);
 
       const lotSel = document.getElementById('lotSel');
       if (chem && chem.length) {
@@ -3236,10 +3511,16 @@
         lotSel.innerHTML = '<option>— no lots in filter —</option>';
         document.getElementById('drillBody').innerHTML = '<div class="empty">No chemical-tracked lots match the filter.</div>';
         document.getElementById('topChem').innerHTML = '<div class="empty">No chemicals match the current filter.</div>';
+      } else if (net.chem === 'loading') {
+        lotSel.innerHTML = '<option>loading…</option>';
+        document.getElementById('drillBody').innerHTML = loadingBox('Loading chemical data…');
+        document.getElementById('topChem').innerHTML = loadingBox('Loading chemical data…');
       } else {
         lotSel.innerHTML = '<option>—</option>';
-        document.getElementById('drillBody').innerHTML = '<div class="empty">Upload the chemical sheet to see per-lot usage.</div>';
-        document.getElementById('topChem').innerHTML = '<div class="empty">No chemical sheet uploaded.</div>';
+        document.getElementById('drillBody').innerHTML = '<div class="empty">' +
+          (net.chem === 'err' ? 'Chemical sheet unreachable — retry from the Refresh button.' : 'Upload the chemical sheet to see per-lot usage.') + '</div>';
+        document.getElementById('topChem').innerHTML = '<div class="empty">' +
+          (net.chem === 'err' ? 'Chemical sheet unreachable.' : 'No chemical sheet uploaded.') + '</div>';
       }
     }
 
@@ -3432,7 +3713,11 @@
        screen. Raw rows are stored (not the ingested shape) so parsing changes take
        effect on the next load. */
     const CACHE_KEY = 'ec_cache_v2';
-    const CACHE_MAX_BYTES = 3500000;   // stay well under the ~5 MB localStorage ceiling
+    const CACHE_MAX_BYTES = 3500000;      // stay well under the ~5 MB localStorage ceiling
+    // A saved copy older than this is treated as COLD: it is not painted as if it were
+    // current. It is still kept, and is used as a last-resort fallback (loudly labelled
+    // with its age) if the live fetch fails outright.
+    const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;   // 7 days
 
     function cacheRead() {
       try {
@@ -3470,7 +3755,7 @@
       if (m < 60) return m + ' min ago';
       const h = Math.round(m / 60);
       if (h < 24) return h + ' hr ago';
-      return 'on ' + new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+      return new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
     }
     function setSrc(kind, cls, text) {
       const el = document.getElementById(kind === 'reg' ? 'srcReg' : 'srcChem');
@@ -3517,8 +3802,13 @@
           cls = 'live'; txt = 'Live · updated ' + relTime(net.lastLive);
         }
       } else if (hasData) {
+        // showing a saved copy because live data could not be reached — if it is more than
+        // a day old, say so in days so nobody mistakes it for today's figures
         cls = 'cached';
-        txt = 'Saved data' + (net.cachedAt ? ' from ' + relTime(net.cachedAt) : '') + ' · live fetch unavailable';
+        const days = net.cachedAt ? Math.floor((Date.now() - net.cachedAt) / 86400000) : 0;
+        txt = 'Saved data' + (net.cachedAt ? ' from ' + relTime(net.cachedAt) : '') +
+          (days >= 1 ? ' (' + days + ' day' + (days > 1 ? 's' : '') + ' old)' : '') +
+          ' · live fetch unavailable';
       } else {
         txt = 'No data yet';
       }
@@ -3712,6 +4002,7 @@
       FONT.color = dark ? '#9fb0c7' : '#475569';
       GRID = dark ? '#2a3650' : '#e2e8f0';
       AXIS_INK = dark ? '#e6edf6' : '#0f172a';
+      CARD_BG = dark ? '#151f33' : '#ffffff';
       // show the icon for what a click will switch TO: moon in light, sun in dark
       const icon = document.getElementById('themeIcon'); if (icon) icon.innerHTML = dark ? ICON_SUN : ICON_MOON;
       try { localStorage.setItem('ec_theme', dark ? 'dark' : 'light'); } catch (e) { }
@@ -3724,6 +4015,26 @@
     (function initTheme() {
       let saved; try { saved = localStorage.getItem('ec_theme'); } catch (e) { }
       applyTheme(saved === 'dark');
+    })();
+
+    // ----- re-render charts when the screen crosses a breakpoint -----
+    // Plotly's own `responsive` flag only rescales the SVG; it cannot know that a mobile
+    // width needs fewer slices, shorter labels and a legend instead of outside text. Those
+    // are decisions made at draw time, so the charts are redrawn when the bucket changes.
+    (function breakpointWatch() {
+      const bucket = () => isMobile() ? 'mobile' : (isNarrow() ? 'tablet' : 'desktop');
+      let current = bucket(), timer = null;
+      window.addEventListener('resize', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          const next = bucket();
+          if (next === current) return;      // a plain resize needs no redraw
+          current = next;
+          if (!state.register && !state.chem) return;
+          renderAll();
+          if (state.page === 'forecast') renderForecastPage();
+        }, 220);
+      });
     })();
 
     // ----- premium card hover: cursor-following 3D tilt + zoom + glow sheen -----
@@ -3779,19 +4090,27 @@
       const cache = cacheRead();
       const cReg = cache.register, cChem = cache.chem;
       const haveCache = !!(cReg || cChem);
+      const cachedAt = Math.max(cReg ? cReg.ts : 0, cChem ? cChem.ts : 0) || 0;
+      const cacheAge = cachedAt ? Date.now() - cachedAt : Infinity;
+      const warmCache = haveCache && cacheAge < CACHE_TTL_MS;
 
-      if (haveCache) {
+      if (warmCache) {
+        // WARM START — a recent saved copy, so real numbers are on screen this frame.
         net.mode = 'cache';
-        net.cachedAt = Math.max(cReg ? cReg.ts : 0, cChem ? cChem.ts : 0) || null;
+        net.cachedAt = cachedAt;
         if (cReg) setSrc('reg', 'cached', 'Register · saved copy');
         if (cChem) setSrc('chem', 'cached', 'Chemical · saved copy');
         applyData(cReg && cReg.rows, cChem && cChem.rows, { resetFilters: true });
         document.getElementById('bootScreen').classList.add('hidden');
-        console.log('[ExactChoice] Painted from saved copy · written', new Date(net.cachedAt).toLocaleString());
+        console.log('[ExactChoice] Warm start — painted from saved copy written', new Date(cachedAt).toLocaleString());
       } else {
+        // COLD START — no saved copy, or one too old to show as if it were current.
         document.getElementById('bootScreen').classList.remove('hidden');
         document.getElementById('dashboard').classList.add('hidden');
         showBootInitial();
+        console.log(haveCache
+          ? '[ExactChoice] Cold start — saved copy is ' + Math.round(cacheAge / 86400000) + ' days old (past the ' + (CACHE_TTL_MS / 86400000) + '-day limit); kept only as a fallback.'
+          : '[ExactChoice] Cold start — no saved copy yet.');
       }
       renderNetStatus();
       startStatusTicker();
@@ -3799,7 +4118,21 @@
 
       (async () => {
         const ok = await loadFromAPI(false);
-        if (!ok && !haveCache && !(API.register || API.chem)) loadData(SAMPLE_REGISTER, SAMPLE_CHEM);
+        if (!ok && !state.register && !state.chem) {
+          if (haveCache) {
+            // Live fetch died and the only thing we have is an old copy. Stale real numbers
+            // beat an error screen — shown, but labelled with their age so nobody mistakes
+            // them for today's figures.
+            net.mode = 'cache'; net.cachedAt = cachedAt;
+            if (cReg) setSrc('reg', 'cached', 'Register · saved copy');
+            if (cChem) setSrc('chem', 'cached', 'Chemical · saved copy');
+            applyData(cReg && cReg.rows, cChem && cChem.rows, { resetFilters: true });
+            renderNetStatus();   // the status line states the copy's age on its own
+            console.warn('[ExactChoice] Live fetch failed — fell back to the stale saved copy.');
+          } else if (!(API.register || API.chem)) {
+            loadData(SAMPLE_REGISTER, SAMPLE_CHEM);
+          }
+        }
         startAutoRefresh();
       })();
     })();
